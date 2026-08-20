@@ -1,0 +1,28 @@
+# Lint and format hooks for the app (ESLint) and ingest (Ruff).
+# Local hooks only, so a commit does not need to fetch from GitHub.
+# App JS/TS stays on eslint-config-next. Do not add a second JS formatter.
+# Ingest Python uses the Ruff already pinned in ingest/pyproject.toml.
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        language: system
+        entry: uv run --project ingest ruff check --fix
+        types: [python]
+        files: ^ingest/
+        exclude: ^ingest/\.venv/
+      - id: ruff-format
+        name: ruff format
+        language: system
+        entry: uv run --project ingest ruff format
+        types: [python]
+        files: ^ingest/
+        exclude: ^ingest/\.venv/
+      - id: eslint
+        name: eslint
+        language: system
+        entry: npx --no-install eslint
+        types_or: [javascript, jsx, ts, tsx]
+        files: \.(cjs|mjs|js|jsx|ts|tsx)$
+        exclude: ^(node_modules/|\.next/|\.agents/|\.agent/)

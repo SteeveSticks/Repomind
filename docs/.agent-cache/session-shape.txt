@@ -1,0 +1,56 @@
+count 301 types {
+  system: 1,
+  user: 214,
+  reasoning: 22,
+  assistant: 19,
+  tool_result: 42,
+  backend_tool_call: 3
+}
+
+=== FIRST USER RECORD KEYS ===
+{
+  "type": "user",
+  "content": [
+    {
+      "type": "text",
+      "text": "<user_info>\nOS Version: windows\nShell: pwsh\nWorkspace Path: C:\\Users\\DELL\\Documents\\projects\\repomind\nToday's date: 2026-08-15\nNote: Prefer using relative paths over absolute paths as tool call args when possible.\n</user_info>\n\n<git_status>\nThis is the git status at the start of the conversation. Note that this status is a snapshot in time, and will not update during the conversation.\n## master\n</"
+    }
+  ]
+}
+
+=== FIRST ASSISTANT KEYS ===
+{
+  "type": "assistant",
+  "content": "I'll start by reading the architect skill and the full request so I can run this the way the skill expects.",
+  "tool_calls": [
+    {
+      "id": "call-abc5d087-7d5a-4a19-8244-fa7f68485c8f-0",
+      "name": "read_file",
+      "arguments": "{\"target_file\":\"C:\\\\Users\\\\DELL\\\\.grok\\\\skills\\\\architect\\\\SKILL.md\"}"
+    },
+    {
+      "id": "call-abc5d087-7d5a-4a19-8244-fa7f68485c8f-1",
+      "name": "read_file",
+      "arguments": "{\"target_file\":\"C:\\\\Users\\\\DELL\\\\.grok\\\\sessions\\\\C%3A%5CUsers%5CDELL%5CDocuments%5Cprojects\\\\repomind\\\\01a00569-4002-7ec2-90a1-191493b11580\\\\prompts\\\\prompt_0.txt\"}"
+    }
+  ],
+  "model_id": "grok-4.6-build",
+  "model_fingerprint": "fp_f95ce4c3856c43c4",
+  "reasoning_effort": "high"
+}
+
+=== LAST ASSISTANT KEYS ===
+{
+  "type": "assistant",
+  "content": "The Figma frames are a light Material 3 Gemini kit: white surfaces, lavender page, deep purple actions, pill composer, suggestion cards. IΓÇÖll confirm the last look choices, offer MCP, and finish installing the skills.",
+  "tool_calls": [
+    {
+      "id": "call-591bbfbc-21d9-4d24-b19f-6b0ff7c666fd-44",
+      "name": "get_command_or_subagent_output",
+      "arguments": "{\"task_ids\":[\"call-52198451-5fcd-4aa0-ba1f-0c02c74461f9-42\",\"call-52198451-5fcd-4aa0-ba1f-0c02c74461f9-43\"],\"timeout_ms\":180000}"
+    }
+  ],
+  "model_id": "grok-4.6-build",
+  "model_fingerprint": "fp_f95ce4c3856c43c4",
+  "reasoning_effort": "high"
+}

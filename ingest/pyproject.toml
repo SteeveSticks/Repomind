@@ -1,0 +1,26 @@
+[project]
+name = "ingest"
+version = "0.1.0"
+description = "Python ingest worker for RepoMind"
+requires-python = ">=3.12"
+dependencies = [
+    "pgvector>=0.3.6",
+    "psycopg[binary]>=3.2.0",
+    "requests>=2.32.0",
+    "voyageai>=0.3.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff==0.16.2",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+src = ["."]
+extend-exclude = [".venv"]

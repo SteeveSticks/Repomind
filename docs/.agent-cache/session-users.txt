@@ -1,0 +1,652 @@
+count 301 types {
+  system: 1,
+  user: 214,
+  reasoning: 22,
+  assistant: 19,
+  tool_result: 42,
+  backend_tool_call: 3
+}
+
+=== USER MESSAGES 214 ===
+
+----- USER 1 len=15 -----
+[object Object]
+
+----- USER 2 len=15 -----
+[object Object]
+
+----- USER 3 len=15 -----
+[object Object]
+
+----- USER 4 len=15 -----
+[object Object]
+
+----- USER 5 len=15 -----
+[object Object]
+
+----- USER 6 len=15 -----
+[object Object]
+
+----- USER 7 len=15 -----
+[object Object]
+
+----- USER 8 len=15 -----
+[object Object]
+
+----- USER 9 len=15 -----
+[object Object]
+
+----- USER 10 len=15 -----
+[object Object]
+
+----- USER 11 len=15 -----
+[object Object]
+
+----- USER 12 len=15 -----
+[object Object]
+
+----- USER 13 len=15 -----
+[object Object]
+
+----- USER 14 len=15 -----
+[object Object]
+
+----- USER 15 len=15 -----
+[object Object]
+
+----- USER 16 len=15 -----
+[object Object]
+
+----- USER 17 len=15 -----
+[object Object]
+
+----- USER 18 len=15 -----
+[object Object]
+
+----- USER 19 len=15 -----
+[object Object]
+
+----- USER 20 len=15 -----
+[object Object]
+
+----- USER 21 len=15 -----
+[object Object]
+
+----- USER 22 len=15 -----
+[object Object]
+
+----- USER 23 len=15 -----
+[object Object]
+
+----- USER 24 len=15 -----
+[object Object]
+
+----- USER 25 len=15 -----
+[object Object]
+
+----- USER 26 len=15 -----
+[object Object]
+
+----- USER 27 len=15 -----
+[object Object]
+
+----- USER 28 len=15 -----
+[object Object]
+
+----- USER 29 len=15 -----
+[object Object]
+
+----- USER 30 len=15 -----
+[object Object]
+
+----- USER 31 len=15 -----
+[object Object]
+
+----- USER 32 len=15 -----
+[object Object]
+
+----- USER 33 len=15 -----
+[object Object]
+
+----- USER 34 len=15 -----
+[object Object]
+
+----- USER 35 len=15 -----
+[object Object]
+
+----- USER 36 len=15 -----
+[object Object]
+
+----- USER 37 len=15 -----
+[object Object]
+
+----- USER 38 len=15 -----
+[object Object]
+
+----- USER 39 len=15 -----
+[object Object]
+
+----- USER 40 len=15 -----
+[object Object]
+
+----- USER 41 len=15 -----
+[object Object]
+
+----- USER 42 len=15 -----
+[object Object]
+
+----- USER 43 len=15 -----
+[object Object]
+
+----- USER 44 len=15 -----
+[object Object]
+
+----- USER 45 len=15 -----
+[object Object]
+
+----- USER 46 len=15 -----
+[object Object]
+
+----- USER 47 len=15 -----
+[object Object]
+
+----- USER 48 len=15 -----
+[object Object]
+
+----- USER 49 len=15 -----
+[object Object]
+
+----- USER 50 len=15 -----
+[object Object]
+
+----- USER 51 len=15 -----
+[object Object]
+
+----- USER 52 len=15 -----
+[object Object]
+
+----- USER 53 len=15 -----
+[object Object]
+
+----- USER 54 len=15 -----
+[object Object]
+
+----- USER 55 len=15 -----
+[object Object]
+
+----- USER 56 len=15 -----
+[object Object]
+
+----- USER 57 len=15 -----
+[object Object]
+
+----- USER 58 len=15 -----
+[object Object]
+
+----- USER 59 len=15 -----
+[object Object]
+
+----- USER 60 len=15 -----
+[object Object]
+
+----- USER 61 len=15 -----
+[object Object]
+
+----- USER 62 len=15 -----
+[object Object]
+
+----- USER 63 len=15 -----
+[object Object]
+
+----- USER 64 len=15 -----
+[object Object]
+
+----- USER 65 len=15 -----
+[object Object]
+
+----- USER 66 len=15 -----
+[object Object]
+
+----- USER 67 len=15 -----
+[object Object]
+
+----- USER 68 len=15 -----
+[object Object]
+
+----- USER 69 len=15 -----
+[object Object]
+
+----- USER 70 len=15 -----
+[object Object]
+
+----- USER 71 len=15 -----
+[object Object]
+
+----- USER 72 len=15 -----
+[object Object]
+
+----- USER 73 len=15 -----
+[object Object]
+
+----- USER 74 len=15 -----
+[object Object]
+
+----- USER 75 len=15 -----
+[object Object]
+
+----- USER 76 len=15 -----
+[object Object]
+
+----- USER 77 len=15 -----
+[object Object]
+
+----- USER 78 len=15 -----
+[object Object]
+
+----- USER 79 len=15 -----
+[object Object]
+
+----- USER 80 len=15 -----
+[object Object]
+
+----- USER 81 len=15 -----
+[object Object]
+
+----- USER 82 len=15 -----
+[object Object]
+
+----- USER 83 len=15 -----
+[object Object]
+
+----- USER 84 len=15 -----
+[object Object]
+
+----- USER 85 len=15 -----
+[object Object]
+
+----- USER 86 len=15 -----
+[object Object]
+
+----- USER 87 len=15 -----
+[object Object]
+
+----- USER 88 len=15 -----
+[object Object]
+
+----- USER 89 len=15 -----
+[object Object]
+
+----- USER 90 len=15 -----
+[object Object]
+
+----- USER 91 len=15 -----
+[object Object]
+
+----- USER 92 len=15 -----
+[object Object]
+
+----- USER 93 len=15 -----
+[object Object]
+
+----- USER 94 len=15 -----
+[object Object]
+
+----- USER 95 len=15 -----
+[object Object]
+
+----- USER 96 len=15 -----
+[object Object]
+
+----- USER 97 len=15 -----
+[object Object]
+
+----- USER 98 len=15 -----
+[object Object]
+
+----- USER 99 len=15 -----
+[object Object]
+
+----- USER 100 len=15 -----
+[object Object]
+
+----- USER 101 len=15 -----
+[object Object]
+
+----- USER 102 len=15 -----
+[object Object]
+
+----- USER 103 len=15 -----
+[object Object]
+
+----- USER 104 len=15 -----
+[object Object]
+
+----- USER 105 len=15 -----
+[object Object]
+
+----- USER 106 len=15 -----
+[object Object]
+
+----- USER 107 len=15 -----
+[object Object]
+
+----- USER 108 len=15 -----
+[object Object]
+
+----- USER 109 len=15 -----
+[object Object]
+
+----- USER 110 len=15 -----
+[object Object]
+
+----- USER 111 len=15 -----
+[object Object]
+
+----- USER 112 len=15 -----
+[object Object]
+
+----- USER 113 len=15 -----
+[object Object]
+
+----- USER 114 len=15 -----
+[object Object]
+
+----- USER 115 len=15 -----
+[object Object]
+
+----- USER 116 len=15 -----
+[object Object]
+
+----- USER 117 len=15 -----
+[object Object]
+
+----- USER 118 len=15 -----
+[object Object]
+
+----- USER 119 len=15 -----
+[object Object]
+
+----- USER 120 len=15 -----
+[object Object]
+
+----- USER 121 len=15 -----
+[object Object]
+
+----- USER 122 len=15 -----
+[object Object]
+
+----- USER 123 len=15 -----
+[object Object]
+
+----- USER 124 len=15 -----
+[object Object]
+
+----- USER 125 len=15 -----
+[object Object]
+
+----- USER 126 len=15 -----
+[object Object]
+
+----- USER 127 len=15 -----
+[object Object]
+
+----- USER 128 len=15 -----
+[object Object]
+
+----- USER 129 len=15 -----
+[object Object]
+
+----- USER 130 len=15 -----
+[object Object]
+
+----- USER 131 len=15 -----
+[object Object]
+
+----- USER 132 len=15 -----
+[object Object]
+
+----- USER 133 len=15 -----
+[object Object]
+
+----- USER 134 len=15 -----
+[object Object]
+
+----- USER 135 len=15 -----
+[object Object]
+
+----- USER 136 len=15 -----
+[object Object]
+
+----- USER 137 len=15 -----
+[object Object]
+
+----- USER 138 len=15 -----
+[object Object]
+
+----- USER 139 len=15 -----
+[object Object]
+
+----- USER 140 len=15 -----
+[object Object]
+
+----- USER 141 len=15 -----
+[object Object]
+
+----- USER 142 len=15 -----
+[object Object]
+
+----- USER 143 len=15 -----
+[object Object]
+
+----- USER 144 len=15 -----
+[object Object]
+
+----- USER 145 len=15 -----
+[object Object]
+
+----- USER 146 len=15 -----
+[object Object]
+
+----- USER 147 len=15 -----
+[object Object]
+
+----- USER 148 len=15 -----
+[object Object]
+
+----- USER 149 len=15 -----
+[object Object]
+
+----- USER 150 len=15 -----
+[object Object]
+
+----- USER 151 len=15 -----
+[object Object]
+
+----- USER 152 len=15 -----
+[object Object]
+
+----- USER 153 len=15 -----
+[object Object]
+
+----- USER 154 len=15 -----
+[object Object]
+
+----- USER 155 len=15 -----
+[object Object]
+
+----- USER 156 len=15 -----
+[object Object]
+
+----- USER 157 len=15 -----
+[object Object]
+
+----- USER 158 len=15 -----
+[object Object]
+
+----- USER 159 len=15 -----
+[object Object]
+
+----- USER 160 len=15 -----
+[object Object]
+
+----- USER 161 len=15 -----
+[object Object]
+
+----- USER 162 len=15 -----
+[object Object]
+
+----- USER 163 len=15 -----
+[object Object]
+
+----- USER 164 len=15 -----
+[object Object]
+
+----- USER 165 len=15 -----
+[object Object]
+
+----- USER 166 len=15 -----
+[object Object]
+
+----- USER 167 len=15 -----
+[object Object]
+
+----- USER 168 len=15 -----
+[object Object]
+
+----- USER 169 len=15 -----
+[object Object]
+
+----- USER 170 len=15 -----
+[object Object]
+
+----- USER 171 len=15 -----
+[object Object]
+
+----- USER 172 len=15 -----
+[object Object]
+
+----- USER 173 len=15 -----
+[object Object]
+
+----- USER 174 len=15 -----
+[object Object]
+
+----- USER 175 len=15 -----
+[object Object]
+
+----- USER 176 len=15 -----
+[object Object]
+
+----- USER 177 len=15 -----
+[object Object]
+
+----- USER 178 len=15 -----
+[object Object]
+
+----- USER 179 len=15 -----
+[object Object]
+
+----- USER 180 len=15 -----
+[object Object]
+
+----- USER 181 len=15 -----
+[object Object]
+
+----- USER 182 len=15 -----
+[object Object]
+
+----- USER 183 len=15 -----
+[object Object]
+
+----- USER 184 len=15 -----
+[object Object]
+
+----- USER 185 len=15 -----
+[object Object]
+
+----- USER 186 len=15 -----
+[object Object]
+
+----- USER 187 len=15 -----
+[object Object]
+
+----- USER 188 len=15 -----
+[object Object]
+
+----- USER 189 len=15 -----
+[object Object]
+
+----- USER 190 len=15 -----
+[object Object]
+
+----- USER 191 len=15 -----
+[object Object]
+
+----- USER 192 len=15 -----
+[object Object]
+
+----- USER 193 len=15 -----
+[object Object]
+
+----- USER 194 len=15 -----
+[object Object]
+
+----- USER 195 len=15 -----
+[object Object]
+
+----- USER 196 len=15 -----
+[object Object]
+
+----- USER 197 len=15 -----
+[object Object]
+
+----- USER 198 len=15 -----
+[object Object]
+
+----- USER 199 len=15 -----
+[object Object]
+
+----- USER 200 len=15 -----
+[object Object]
+
+----- USER 201 len=15 -----
+[object Object]
+
+----- USER 202 len=15 -----
+[object Object]
+
+----- USER 203 len=15 -----
+[object Object]
+
+----- USER 204 len=15 -----
+[object Object]
+
+----- USER 205 len=15 -----
+[object Object]
+
+----- USER 206 len=15 -----
+[object Object]
+
+----- USER 207 len=15 -----
+[object Object]
+
+----- USER 208 len=15 -----
+[object Object]
+
+----- USER 209 len=15 -----
+[object Object]
+
+----- USER 210 len=15 -----
+[object Object]
+
+----- USER 211 len=15 -----
+[object Object]
+
+----- USER 212 len=15 -----
+[object Object]
+
+----- USER 213 len=15 -----
+[object Object]
+
+----- USER 214 len=15 -----
+[object Object]

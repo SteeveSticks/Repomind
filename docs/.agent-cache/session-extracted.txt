@@ -1,0 +1,403 @@
+=== UNIQUE USER QUERIES 8 ===
+
+
+----- Q1 len=6023 -----
+<user_info>
+OS Version: windows
+Shell: pwsh
+Workspace Path: C:\Users\DELL\Documents\projects\repomind
+Today's date: 2026-08-15
+Note: Prefer using relative paths over absolute paths as tool call args when possible.
+</user_info>
+
+<git_status>
+This is the git status at the start of the conversation. Note that this status is a snapshot in time, and will not update during the conversation.
+## master
+</git_status>
+
+<rules>
+The rules section has a number of possible rules/memories/context that you should consider. In each subsection, we provide instructions about what information the subsection contains and how you should consider/follow the contents of the subsection.
+
+
+<always_applied_workspace_rules description="These are workspace-level rules that the agent must always follow.">
+<always_applied_workspace_rule name="C:\Users\DELL\Documents\projects\repomind\Agents.md"><!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes ΓÇö APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` ΓÇö verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
+
+# RepoMind
+
+## Stack
+
+- **Language / Runtime**: TypeScript on Node for the Next.js app. Python 3.12 with uv for ingest.
+- **Framework**: Next.js 16 App Router, React 19, Tailwind 4
+- **Key dependencies**: Neon Postgres with pgvector, Drizzle, Trigger.dev, Voyage embeddings, Vercel AI SDK, Groq on deploy, Ollama on a laptop
+- **Package manager**: npm
+- **Local DB**: Docker Compose `pgvector/pgvector:pg16`
+
+## Build approach
+
+Skateboard: ship the thinnest usable whole first, then grow it.
+
+## Commands
+
+```bash
+# Install
+npm install
+
+# Dev server
+npm run dev
+
+# Build
+npm run build
+
+# Lint
+npm run lint
+
+# Local Postgres (pgvector)
+docker compose up -d
+
+# Ingest worker
+uv run --directory ingest python main.py
+
+# Ingest tests
+uv run --directory ingest pytest
+```
+
+## Specs
+
+Stored in `docs/specs/`. Format: `docs/specs/NNNN-title.md`.
+
+## Rules
+
+- TypeScript `strict` is on. Keep it on.
+- UI lives in `app/` (App Router). Import with `@/`.
+- Style with Tailwind 4 (`@import "tailwindcss"` in `app/globals.css`).
+- Use npm. The lockfile is `package-lock.json`.
+- Never commit `.env*` files. Secrets stay in `.env.local` and host dashboards.
+- Before writing Next.js code, read the version docs in `node_modules/next/dist/docs/`. This Next.js release can differ from older guides.
+- Local Postgres is Docker Compose (`pgvector/pgvector:pg16`). Default URL `postgresql://repomind:repomind@127.0.0.1:5432/repomind`.
+- Drizzle schema lives in `db/`. The ingest worker uses psycopg, not Drizzle.
+- App lint is ESLint (`eslint-config-next`). Do not add a second JS formatter unless asked.
+- Ingest lint and format is Ruff. Git hooks use the `pre-commit` framework. Neither is installed yet.
+
+## Agent skills
+
+- [trigger-setup](.agents/skills/trigger-setup/): `triggerdotdev/skills`, add Trigger.dev to the app
+- [trigger-tasks](.agents/skills/trigger-tasks/): `triggerdotdev/skills`, write Trigger.dev tasks
+- [neon](.agents/skills/neon/): `neondatabase/agent-skills`, Neon product overview
+- [neon-postgres](.agents/skills/neon-postgres/): `neondatabase/agent-skills`, Lakebase Postgres setup and access
+- [vercel-react-best-practices](.agents/skills/vercel-react-best-practices/): `vercel-labs/agent-skills`, React and Next.js performance
+- [deploy-to-vercel](.agents/skills/deploy-to-vercel/): `vercel-labs/agent-skills`, deploy the app to Vercel
+
+MCP servers: trigger-dev (connected), neon (recommended), vercel (recommended)
+
+## Context files
+
+- [ingest/AGENTS.md](ingest/AGENTS.md): Python ingest worker (uv, pytest, Trigger.dev task `ingest-repo`)
+
+_Drafted by /audit from the repo, worth a quick human pass. Edit freely: once a line stops matching this draft, later runs treat it as curated and will flag rather than overwrite it._</always_applied_workspace_rule>
+
+<always_applied_workspace_rule name="C:\Users\DELL\Documents\projects\repomind\Claude.md">@AGENTS.md</always_applied_workspace_rule>
+</always_applied_workspace_rules>
+
+<user_rules description="These are rules set by the user that you should follow if appropriate.">
+<user_rule>When implementing or fixing anything in a web application (UI, layout, styling, routing, client state, or rendered data), verify your work in the browser before declaring the task complete.
+
+**Use this verification workflow:**
+- Open the app with the available browser tools and exercise the changed feature end to end the way a real user would: click, type, submit, navigate.
+- A single render screenshot of the changed screen is NOT verification. Confirm behavior, not just appearance.
+- Check every page and route that shares the state, data, or components you touched. Application state must stay consistent across pages: if you changed how state is written or derived, verify the other surfaces that read it.
+- Hunt for regressions. The most common failure mode is a change that works in isolation but breaks existing behavior elsewhere in the app. Navigate the surrounding flows and look for what broke.
+- Verify the paths and edge states your change touches (empty states, error states, route and flag variants), not only the main path.
+- When layout or styling changed, check both desktop and mobile viewports.
+- If verification finds a problem, fix it and re-verify. Do not finish with unverified UI work.
+
+If no browser tools are available, verify through the closest available substitute (tests, curl against the dev server, rendering scripts) and say what you could not verify.</user_rule>
+...[truncated]
+
+----- Q2 len=23003 -----
+<system-reminder>
+The following skills are available for use:
+
+- claimable-postgres: Provision instant temporary Postgres databases via Claimable Postgres by Neon (neon.new) with no login, signup, or credit card.ΓÇª
+  Use when: users ask for a quick Postgres environment, a throwaway DATABASE_URL for prototyping/tests, or "just give me a DB now". Triggers include: "quick postgres", "temporary postgres", "no signup database", "no credit card database", "instant DATABASE_URL", "npx neon-new", ΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\claimable-postgres\SKILL.md
+- deploy-to-vercel: Deploy applications and websites to Vercel
+  Use when: the user requests deployment actions like "deploy my app", "deploy and give me the link", "push this live", or "create a preview deployment".
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\deploy-to-vercel\SKILL.md
+- neon: Overview of Neon, a complete set of cloud backend primitives for apps and agents, spanning Lakebase Postgres, Auth, the Data API, Object Storage, Compute Functions, and the AI GatewayΓÇª
+  Use when: "Neon" or "Lakebase Postgres" is mentioned, or when any of its individual capabilities are the trigger: "object storage" or "S3", "buckets", "serverless functions", "AI gateway", "call an LLM", "logs", "branch lΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon\SKILL.md
+- neon-ai-gateway: One API and one credential for frontier and open-sourceΓÇª
+  Use when: a user wants to call an LLM, add AI/chat/an agent to their app, route between model providers (OpenAI, Anthropic, Google/Gemini, Meta, Alibaba, DeepSeek), or avoid juggling separate provider API keys and accounts ΓÇö especially when they already use Neon and want AI requests to branch with their project. Works with the OpenAI SDK, AnthroΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-ai-gateway\SKILL.md
+- neon-functions: Long-running, serverless Node.js HTTP functions deployed onto your Neon branch, ΓÇª
+  Use when: a user wants to host an API, an AI agent with long streaming responses, a WebSocket or server-sent-events (SSE) server, a webhook handler, a Discord bot, an MCP server, or any request/response workload that risks timing out on short, lambda-style serverless functions ΓÇö and wants it to branch with their databaseΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-functions\SKILL.md
+- neon-object-storage: S3-compatible object storage that branches with your Neon projΓÇª
+  Use when: a user wants object storage, a bucket, blob/file storage, or somewhere to put uploads, images, documents, avatars, or user-generated files for their app or agent ΓÇö especially when they already use (or are setting up) Lakebase Postgres and don't want to add a separate storage provider like AWS S3, Cloudflare R2, or Supabase StoraΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-object-storage\SKILL.md
+- neon-postgres: Guides and best practices for working with Lakebase Postgres, the database behind Neon. Covers setup, connection methods and drivers, pooled vs direct connections, branching, schema migratΓÇª
+  Use when: users ask about "Lakebase Postgres", "Neon setup", "connect to Neon", "Neon project", "DATABASE_URL", "serverless Postgres", "Neon CLI", "neon", "Neon MCP", "Neon Auth", "@neondatabase/serverless", "@neondaΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-postgres\SKILL.md
+- neon-postgres-branches: Choose and create the right Neon branch type for tesΓÇª
+  Use when: users ask about Neon branching, migration testing with real data, isolated test environments, schema-only branch workflows for sensitive data, resetting a branch from its parent, branch expiration and CI/CD branch lifecycles, or branch creation via Neon CLI or Neon MCP. Triggers include "Neon branch", "test migrations safely", "branch produΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-postgres-branches\SKILL.md
+- neon-postgres-egress-optimizer: Diagnose and fix excessive Postgres egress (network dataΓÇª
+  Use when: a user mentions high database bills, unexpected data transfer costs, network transfer charges, egress spikes, "why is my Neon bill so high", "database costs jumped", SELECT * optimization, query overfetching, reduce Neon costs, optimize database usage, or wants to reduce data sent from their database to their application. Also use when ΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-postgres-egress-optimizer\SKILL.md
+- trigger-authoring-chat-agent: Author and run a durable AI chat agent with chat.agent from @trigger.dev/sdk/ai: the per-turn run loop, why you MUST spread ...chat.toStreamTextOptions() first, returning a StreamTextResult vs calling chat.pipe(), the two server actions (chat.createStartSessionAction + auth.createPublicToken), and wiring useChat to useTriggerChatTransport. Load this when building, modifying, or debugging a chatΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\trigger-authoring-chat-agent\SKILL.md
+- trigger-chat-agent-advanced: Advanced and operational chat.agent capabilities for Trigger.dev, loaded on demand. Load this when working on the raw Sessions primitive (sessions / SessionHandle), a custom chat transport or the realtime wire protocol, durable sub-agents (AgentChat, chat.stream.writer), human-in-the-loop, steering, actions, background injection (chat.defer / chat.inject), fast starts (preload, Head Start via @ΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\trigger-chat-agent-advanced\SKILL.md
+- trigger-cost-savings: Analyze Trigger.dev tasks, schedules, and runs for cost optimization opportunities
+  Use when: asked to reduce spend, optimize costs, audit usage, right-size machines, or review task efficiency. Combines static source analysis with live run analysis via the Trigge
+...[truncated]
+
+----- Q3 len=491 -----
+<system-reminder>
+MCP servers connected:
+- tasks (9 tools)
+- voice (1 tool)
+
+MCP servers that failed to connect:
+- neon (MCP server 'neon' timed out after 30s)
+- trigger-dev (MCP server 'trigger-dev' timed out after 30s)
+- vercel (MCP server 'vercel' timed out after 30s)
+
+To use MCP tools, you MUST call `search_tool` first to retrieve the tool's input schema before calling `use_tool`. NEVER guess parameter names ΓÇö always use the exact schema returned by `search_tool`.
+</system-reminder>
+
+----- Q4 len=41 -----
+/architect design system & UI foundation.
+
+----- Q5 len=366 -----
+I prefer sending a figma file, this is gemini figma, i want to base the preview off this https://www.figma.com/design/G6TZmoy4OhsyEEqdR2JeFj/Google-Gemini---Built-with-Material-3-Design-Kit--Community-?node-id=54795-2209&p=f&t=HeBTZQfatUOgihto-0 and this is an image of how i want the chat to ne& 'c:\Users\DELL\Pictures\Screenshots\Screenshot 2026-08-15 134359.png'
+
+----- Q6 len=24181 -----
+<system-reminder>
+The following skills are available for use:
+
+- architect: Run /architect when choosing between approaches, designing a feature or page, picking a tech stack, or when /develop says a decision is owed, anytime a load bearing technical decision is unmade. Asks deep questions, recommends an answer, and writes a build spec to docs/specs/. Owns all spec files.
+  Absolute path: C:\Users\DELL\.agents\skills\architect\SKILL.md
+- api-design-principles: Master REST and GraphQL API design principles to build intuitive, scalable, and maintainable APIs that delight developers
+  Use when: designing new APIs, reviewing API specifications, or establishing API design standards.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\api-design-principles\SKILL.md
+- architecture-patterns: Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design
+  Use when: designing clean architecture for a new microservice, when refactoring a monolith to use bounded contexts, when implementing hexagonal or onion architecture patterns, or when debugging dependency cycles between application layers.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\architecture-patterns\SKILL.md
+- claimable-postgres: Provision instant temporary Postgres databases via Claimable Postgres by Neon (neon.new) with no login, signup, or credit card.ΓÇª
+  Use when: users ask for a quick Postgres environment, a throwaway DATABASE_URL for prototyping/tests, or "just give me a DB now". Triggers include: "quick postgres", "temporary postgres", "no signup database", "no credit card database", "instant DATABASE_URL", "npx neon-new", ΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\claimable-postgres\SKILL.md
+- deploy-to-vercel: Deploy applications and websites to Vercel
+  Use when: the user requests deployment actions like "deploy my app", "deploy and give me the link", "push this live", or "create a preview deployment".
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\deploy-to-vercel\SKILL.md
+- hads: Use when writing technical documentation that needs to be readable by both humans and AI models, converting existing docs to HADS format, validating a HADS document, or optimizing documentation for token-efficient AI consumption.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\hads\SKILL.md
+- neon: Overview of Neon, a complete set of cloud backend primitives for apps and agents, spanning Lakebase Postgres, Auth, the Data API, Object Storage, Compute Functions, and the AI GatewayΓÇª
+  Use when: "Neon" or "Lakebase Postgres" is mentioned, or when any of its individual capabilities are the trigger: "object storage" or "S3", "buckets", "serverless functions", "AI gateway", "call an LLM", "logs", "branch lΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon\SKILL.md
+- neon-ai-gateway: One API and one credential for frontier and open-sourceΓÇª
+  Use when: a user wants to call an LLM, add AI/chat/an agent to their app, route between model providers (OpenAI, Anthropic, Google/Gemini, Meta, Alibaba, DeepSeek), or avoid juggling separate provider API keys and accounts ΓÇö especially when they already use Neon and want AI requests to branch with their project. Works with the OpenAI SDK, AnthroΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-ai-gateway\SKILL.md
+- neon-functions: Long-running, serverless Node.js HTTP functions deployed onto your Neon branch, ΓÇª
+  Use when: a user wants to host an API, an AI agent with long streaming responses, a WebSocket or server-sent-events (SSE) server, a webhook handler, a Discord bot, an MCP server, or any request/response workload that risks timing out on short, lambda-style serverless functions ΓÇö and wants it to branch with their databaseΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-functions\SKILL.md
+- neon-object-storage: S3-compatible object storage that branches with your Neon projΓÇª
+  Use when: a user wants object storage, a bucket, blob/file storage, or somewhere to put uploads, images, documents, avatars, or user-generated files for their app or agent ΓÇö especially when they already use (or are setting up) Lakebase Postgres and don't want to add a separate storage provider like AWS S3, Cloudflare R2, or Supabase StoraΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-object-storage\SKILL.md
+- neon-postgres: Guides and best practices for working with Lakebase Postgres, the database behind Neon. Covers setup, connection methods and drivers, pooled vs direct connections, branching, schema migratΓÇª
+  Use when: users ask about "Lakebase Postgres", "Neon setup", "connect to Neon", "Neon project", "DATABASE_URL", "serverless Postgres", "Neon CLI", "neon", "Neon MCP", "Neon Auth", "@neondatabase/serverless", "@neondaΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-postgres\SKILL.md
+- neon-postgres-branches: Choose and create the right Neon branch type for tesΓÇª
+  Use when: users ask about Neon branching, migration testing with real data, isolated test environments, schema-only branch workflows for sensitive data, resetting a branch from its parent, branch expiration and CI/CD branch lifecycles, or branch creation via Neon CLI or Neon MCP. Triggers include "Neon branch", "test migrations safely", "branch produΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\neon-postgres-branches\SKILL.md
+- neon-postgres-egress-optimizer: Diagnose and fix excessive Postgres egress (network dataΓÇª
+  Use when: a user mentions high database bills, unexpected data transfer costs, network transfer charges, egress spikes, "why is my Neon bill so high", "database costs jumped", SELECT * optimization, query overfetching, reduce Neon costs, optimize database usage, or wants to reduce d
+...[truncated]
+
+----- Q7 len=37365 -----
+<system-reminder>
+The following skills are available for use:
+
+- architect: Run /architect when choosing between approaches, designing a feature or page, picking a tech stack, or when /develop says a decision is owed, anytime a load bearing technical decision is unmade. Asks deep questions, recommends an answer, and writes a build spec to docs/specs/. Owns all spec files.
+  Absolute path: C:\Users\DELL\.agents\skills\architect\SKILL.md
+- airflow-dag-patterns: Build production Apache Airflow DAGs with best practices for operators, sensors, testing, and deployment
+  Use when: creating data pipelines, orchestrating workflows, or scheduling batch jobs.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\airflow-dag-patterns\SKILL.md
+- api-design-principles: Master REST and GraphQL API design principles to build intuitive, scalable, and maintainable APIs that delight developers
+  Use when: designing new APIs, reviewing API specifications, or establishing API design standards.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\api-design-principles\SKILL.md
+- architecture-patterns: Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design
+  Use when: designing clean architecture for a new microservice, when refactoring a monolith to use bounded contexts, when implementing hexagonal or onion architecture patterns, or when debugging dependency cycles between application layers.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\architecture-patterns\SKILL.md
+- checkpoint-promotion: Gate fine-tuned checkpoints with drift budgets, paired comparison, and forgetting checks before promotion. Use after a training run produces a checkpoint, when deciding whether a tuned model ships, or when a promoted model needs re-gating against updated goldens.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\checkpoint-promotion\SKILL.md
+- claimable-postgres: Provision instant temporary Postgres databases via Claimable Postgres by Neon (neon.new) with no login, signup, or credit card.ΓÇª
+  Use when: users ask for a quick Postgres environment, a throwaway DATABASE_URL for prototyping/tests, or "just give me a DB now". Triggers include: "quick postgres", "temporary postgres", "no signup database", "no credit card database", "instant DATABASE_URL", "npx neon-new", ΓÇª
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\claimable-postgres\SKILL.md
+- cqrs-implementation: Implement Command Query Responsibility Segregation for scalable architectures
+  Use when: separating read and write models, optimizing query performance, or building event-sourced systems.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\cqrs-implementation\SKILL.md
+- dataset-curation: Prepare, format, and validate datasets for supervised fine-tuning and preference training
+  Use when: converting raw data into training format, applying chat templates, configuring sequence packing, generating synthetic training data, or writing a dataset card before a run.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\dataset-curation\SKILL.md
+- deploy-to-vercel: Deploy applications and websites to Vercel
+  Use when: the user requests deployment actions like "deploy my app", "deploy and give me the link", "push this live", or "create a preview deployment".
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\deploy-to-vercel\SKILL.md
+- embedding-strategies: Select and optimize embedding models for semantic search and RAG applications
+  Use when: choosing embedding models, implementing chunking strategies, or optimizing embedding quality for specific domains.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\embedding-strategies\SKILL.md
+- eval-harness-first: Build the evaluation harness that gates every fine-tuning run ΓÇö golden sets, per-failure-mode graders, judge calibration, and base-model baselines
+  Use when: starting a fine-tuning effort, when converting traces into an eval set, or when calibrating a judge against human labels.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\eval-harness-first\SKILL.md
+- event-store-design: Design and implement event stores for event-sourced systems
+  Use when: building event sourcing infrastructure, choosing event store technologies, or implementing event persistence patterns.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\event-store-design\SKILL.md
+- finetuning-method-selection: Decide whether to fine-tune at all, and route to the right method (SFT, DPO/ORPO/KTO, GRPO/RLVR, continued pretraining) and base model
+  Use when: starting any fine-tuning effort, when unsure whether RAG or prompting would suffice, or when choosing between preference-optimization and reinforcement methods.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\finetuning-method-selection\SKILL.md
+- grpo-rlvr-training: Train reasoning and verifiable-task behavior with GRPO and reinforcement learning from verifiable rewards (RLVR)
+  Use when: task success is algorithmically checkable (math, code, tool calls, structured output), when designing GRPO reward functions, or when a GRPO run diverges or reward-hacks.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\grpo-rlvr-training\SKILL.md
+- hads: Use when writing technical documentation that needs to be readable by both humans and AI models, converting existing docs to HADS format, validating a HADS document, or optimizing documentation for token-efficient AI consumption.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\hads\SKILL.md
+- hybrid-search-implementation: Combine vector and keyword search for improved retrieval
+  Use when: implementing RAG systems, building search engines, or when neither approach alone provi
+...[truncated]
+
+----- Q8 len=79616 -----
+<system-reminder>
+The following skills are available for use:
+
+- architect: Run /architect when choosing between approaches, designing a feature or page, picking a tech stack, or when /develop says a decision is owed, anytime a load bearing technical decision is unmade. Asks deep questions, recommends an answer, and writes a build spec to docs/specs/. Owns all spec files.
+  Absolute path: C:\Users\DELL\.agents\skills\architect\SKILL.md
+- accessibility-compliance: Implement WCAG 2.2 compliant interfaces with mobile accessibility, inclusive design patterns, and assistive technology support
+  Use when: auditing accessibility, implementing ARIA patterns, building for screen readers, or ensuring inclusive user experiences.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\accessibility-compliance\SKILL.md
+- airflow-dag-patterns: Build production Apache Airflow DAGs with best practices for operators, sensors, testing, and deployment
+  Use when: creating data pipelines, orchestrating workflows, or scheduling batch jobs.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\airflow-dag-patterns\SKILL.md
+- angular-migration: Migrate from AngularJS to Angular using hybrid mode, incremental component rewriting, and dependency injection updates
+  Use when: upgrading AngularJS applications, planning framework migrations, or modernizing legacy Angular code.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\angular-migration\SKILL.md
+- anti-reversing-techniques: Understand anti-reversing, obfuscation, and protection techniques encountered during software analysis
+  Use when: analyzing malware evasion techniques, when implementing anti-debugging protections for CTF challenges, when reverse engineering packed binaries, or when building security research tools that need to detect virtualized environments.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\anti-reversing-techniques\SKILL.md
+- api-design-principles: Master REST and GraphQL API design principles to build intuitive, scalable, and maintainable APIs that delight developers
+  Use when: designing new APIs, reviewing API specifications, or establishing API design standards.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\api-design-principles\SKILL.md
+- architecture-decision-records: Write and maintain Architecture Decision Records (ADRs) following best practices for technical decision documentation
+  Use when: documenting significant technical decisions, reviewing past architectural choices, or establishing decision processes.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\architecture-decision-records\SKILL.md
+- architecture-patterns: Implement proven backend architecture patterns including Clean Architecture, Hexagonal Architecture, and Domain-Driven Design
+  Use when: designing clean architecture for a new microservice, when refactoring a monolith to use bounded contexts, when implementing hexagonal or onion architecture patterns, or when debugging dependency cycles between application layers.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\architecture-patterns\SKILL.md
+- async-python-patterns: Master Python asyncio, concurrent programming, and async/await patterns for high-performance applications
+  Use when: building async APIs, concurrent systems, or I/O-bound applications requiring non-blocking operations.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\async-python-patterns\SKILL.md
+- attack-tree-construction: Build comprehensive attack trees to visualize threat paths
+  Use when: mapping attack scenarios, identifying defense gaps, or communicating security risks to stakeholders.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\attack-tree-construction\SKILL.md
+- auth-implementation-patterns: Master authentication and authorization patterns including JWT, OAuth2, session management, and RBAC to build secure, scalable access control systems
+  Use when: implementing auth systems, securing APIs, or debugging security issues.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\auth-implementation-patterns\SKILL.md
+- backtesting-frameworks: Build robust backtesting systems for trading strategies with proper handling of look-ahead bias, survivorship bias, and transaction costs
+  Use when: developing trading algorithms, validating strategies, or building backtesting infrastructure.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\backtesting-frameworks\SKILL.md
+- bash-defensive-patterns: Master defensive Bash programming techniques for production-grade scripts
+  Use when: writing robust shell scripts, CI/CD pipelines, or system utilities requiring fault tolerance and safety.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\bash-defensive-patterns\SKILL.md
+- bats-testing-patterns: Master Bash Automated Testing System (Bats) for comprehensive shell script testing
+  Use when: writing tests for shell scripts, CI/CD pipelines, or requiring test-driven development of shell utilities.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\bats-testing-patterns\SKILL.md
+- bazel-build-optimization: Optimize Bazel builds for large-scale monorepos
+  Use when: configuring Bazel, implementing remote execution, or optimizing build performance for enterprise codebases.
+  Absolute path: C:\Users\DELL\Documents\projects\repomind\.agents\skills\bazel-build-optimization\SKILL.md
+- before-you-build: Pre-build product and feature risk review for founders, product managers, and AI-assisted builders
+  Use when: the user is about to build a landing page, MVP, SaaS product, internal tool, agent workflow, or major feature and needs to check demand, positioning, monetization, retention, trust, distribution, and adoption risk before implementation starts.
+  Absolute 
+...[truncated]
+
+
+=== ASSISTANT MESSAGES 19 ===
+
+
+----- A1 tools=[read_file, read_file] len=107 -----
+I'll start by reading the architect skill and the full request so I can run this the way the skill expects.
+
+----- A2 tools=[run_terminal_command, list_dir, list_dir, read_file] len=139 -----
+Topic is set: design system and UI foundation. I'll run pre-flight next, then read the design conversation protocol before asking anything.
+
+----- A3 tools=[run_terminal_command, read_file, read_file, read_file, read_file] len=128 -----
+Git fetch needs PowerShell syntax. I'll finish freshness, then read scope, existing specs, and the design conversation protocol.
+
+----- A4 tools=[read_file, read_file, read_file, read_file, read_file, grep, list_dir] len=164 -----
+Repo is current on `master`. Feature 4 in scope matches this topic. I'll sample the existing UI and related spec so I can frame the decision before asking anything.
+
+----- A5 tools=[ask_user_question] len=627 -----
+Repo is current. Feature 4 in scope is this work, still planned. Specs `0001` and `0002` sit next to it (stack already locked Tailwind and App Router) but they do not define a look, so this is a new spec.
+
+Reading this as a new **FEATURE** on your existing stack (Next.js 16 App Router, React 19, Tailwind 4). Web only. Skateboard: the thinnest usable kit first. The current screen is still the `create-next-app` starter. English only, no accounts, no new database. Marketing, history, uploads, and sign in stay out. Correct me if that read is wrong.
+
+I will pin the job of this foundation first, then the look and the toolkit.
+
+----- A6 tools=[ask_user_question] len=434 -----
+You chose a thin kit with a preview page, the Slice 1 surfaces (local ingest, wait and fail, ask, answer, citation), and WCAG 2.2 AA with visible focus and full keyboard.
+
+Design source is images you will give me. Please attach those screenshots (or a folder of them) in your next message so I can read type, color, spacing, and components from them instead of inventing a look.
+
+While you gather those, a few remaining job questions:
+
+----- A7 tools=[ask_user_question] len=357 -----
+Locked: preview at `/ui`, desktop first and usable on a phone, hover and focus only, and later slices stay out.
+
+I still need the images you said you would give me. Drop them in the next message (one frame or a set). I will read type, color, spacing, and control shapes from those and will not invent a palette.
+
+While those are coming, the rest of the job:
+
+----- A8 tools=[ask_user_question] len=413 -----
+Stage (a) is enough to write acceptance criteria later. No database sits under this kit (tokens live in CSS, not Postgres). I will treat Stage (b) as ΓÇ£no tablesΓÇ¥ unless you want a saved theme.
+
+Images are still missing. Please attach them when you have them. I will not invent a palette without them.
+
+Toolkit next (Stage (c)). Existing stack already locks Next.js, React, and Tailwind 4. I will not reopen those.
+
+----- A9 tools=[read_file] len=276 -----
+You picked shadcn/ui, tokens in `app/globals.css` plus a short `design.md`, CSS only theme, and no References section. That is a new tool, so I will check how this skill wants new tools handled before the next kit questions. Also, I still need those images when you have them.
+
+----- A10 tools=[ask_user_question] len=211 -----
+An Agent Skill teaches later builds the real shadcn and Lucide conventions so they do not guess. An MCP server would give live access to a tool dashboard. Both are optional. Nothing is searched until you say so.
+
+----- A11 tools=[spawn_subagent, ask_user_question] len=144 -----
+I'll search the registry for shadcn, Lucide, and Tailwind in the background, and keep going on the kit surface so we do not wait on that search.
+
+----- A12 tools=[ask_user_question] len=0 -----
+
+
+----- A13 tools=[ask_user_question] len=0 -----
+
+
+----- A14 tools=[read_file, search_tool, get_command_or_subagent_output] len=164 -----
+You want the kit to follow that Gemini Material 3 Figma file, plus your chat screenshot. IΓÇÖll read both, then keep the interview going from what they actually show.
+
+----- A15 tools=[read_file, web_fetch, search_tool] len=0 -----
+
+
+----- A16 tools=[web_fetch] len=200 -----
+The Figma file did not load here (no Figma connection, and the public page is a shell). I did read your chat screenshot. Next IΓÇÖll pin how those two sources should win, then offer the skills we found.
+
+----- A17 tools=[ask_user_question] len=0 -----
+
+
+----- A18 tools=[read_file, read_file, read_file, run_terminal_command, run_terminal_command] len=234 -----
+You want the Gemini Material 3 Figma look, official M3 token names, and the extra frames as color reference. Chat layout follows your session shot; the sidebar waits for later. IΓÇÖll read those images and install the three skills next.
+
+----- A19 tools=[get_command_or_subagent_output] len=217 -----
+The Figma frames are a light Material 3 Gemini kit: white surfaces, lavender page, deep purple actions, pill composer, suggestion cards. IΓÇÖll confirm the last look choices, offer MCP, and finish installing the skills.
