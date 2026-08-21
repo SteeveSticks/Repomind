@@ -4,7 +4,6 @@ import concurrent.futures
 import os
 import re
 import shutil
-import sys
 import tarfile
 import tempfile
 from dataclasses import dataclass
@@ -177,6 +176,13 @@ def download_tarball(owner: str, repo: str, destination_path: str) -> None:
         ) from err
 
 
+def _is_safe_path(extract_dir: str, member_path: str) -> bool:
+    """Check if extracted path would escape the extract directory (directory traversal protection)."""
+    abs_extract = os.path.abspath(extract_dir)
+    abs_member = os.path.abspath(member_path)
+    return abs_member.startswith(abs_extract + os.sep) or abs_member == abs_extract
+
+
 def unpack_and_verify_size(tarball_path: str, extract_dir: str) -> str:
     """
     Unpack tarball and verify total unpacked size does not exceed 50 MB limit.
@@ -192,11 +198,13 @@ def unpack_and_verify_size(tarball_path: str, extract_dir: str) -> str:
                         "too_large",
                         "Repository exceeds 50 MB unpacked size limit.",
                     )
-            # filter="data" added in Python 3.12; fall back for older versions
-            if sys.version_info >= (3, 12):
-                tar.extractall(path=extract_dir, filter="data")
-            else:
-                tar.extractall(path=extract_dir)
+                # Manual path traversal check (replaces filter="data" from Python 3.12+)
+                member_path = os.path.join(extract_dir, member.name)
+                if not _is_safe_path(extract_dir, member_path):
+                    raise IngestError(
+                        "fetch_failed", f"Archive contains unsafe path: {member.name}"
+                    )
+            tar.extractall(path=extract_dir)
     except IngestError:
         raise
     except Exception as err:
