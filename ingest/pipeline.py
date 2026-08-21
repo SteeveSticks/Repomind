@@ -4,6 +4,7 @@ import concurrent.futures
 import os
 import re
 import shutil
+import sys
 import tarfile
 import tempfile
 from dataclasses import dataclass
@@ -191,7 +192,11 @@ def unpack_and_verify_size(tarball_path: str, extract_dir: str) -> str:
                         "too_large",
                         "Repository exceeds 50 MB unpacked size limit.",
                     )
-            tar.extractall(path=extract_dir, filter="data")
+            # filter="data" added in Python 3.12; fall back for older versions
+            if sys.version_info >= (3, 12):
+                tar.extractall(path=extract_dir, filter="data")
+            else:
+                tar.extractall(path=extract_dir)
     except IngestError:
         raise
     except Exception as err:
