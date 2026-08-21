@@ -10,10 +10,13 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
+from dotenv import load_dotenv
 import psycopg
 import requests
 import voyageai
 from pgvector.psycopg import register_vector
+
+load_dotenv()
 
 MAX_UNPACKED_BYTES = 50 * 1024 * 1024  # 50 MB
 MAX_SINGLE_FILE_BYTES = 1024 * 1024  # 1 MB
