@@ -24,7 +24,13 @@ result = process_ingest_job(${JSON.stringify(jobId)})
 print(json.dumps(result))
 `;
 
-    const result = await python.runInline(script);
+    const result = await python.runInline(script, {
+      env: {
+        DATABASE_URL_DIRECT: process.env.DATABASE_URL_DIRECT,
+        VOYAGE_API_KEY: process.env.VOYAGE_API_KEY,
+        GITHUB_TOKEN: process.env.GITHUB_TOKEN,
+      },
+    });
     logger.info("Ingest pipeline finished", { jobId, stdout: result.stdout });
 
     let parsed: IngestResult;
