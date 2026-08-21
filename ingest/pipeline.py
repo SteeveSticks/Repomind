@@ -204,7 +204,9 @@ def unpack_and_verify_size(tarball_path: str, extract_dir: str) -> str:
                     raise IngestError(
                         "fetch_failed", f"Archive contains unsafe path: {member.name}"
                     )
-            tar.extractall(path=extract_dir)
+            # Extract members individually to avoid filter parameter issues on older Python
+            for member in tar.getmembers():
+                tar.extract(member, path=extract_dir)
     except IngestError:
         raise
     except Exception as err:
