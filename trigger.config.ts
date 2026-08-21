@@ -23,6 +23,7 @@ export default defineConfig({
         requirements: [
           "pgvector>=0.3.6",
           "psycopg[binary]>=3.2.0",
+          "python-dotenv>=1.2.3",
           "requests>=2.32.0",
           "voyageai>=0.3.2",
         ],
