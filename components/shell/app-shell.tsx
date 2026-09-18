@@ -10,6 +10,7 @@ import {
 } from "@/components/chat/new-chat-canvas";
 import { ThreadView, type ThreadMessage } from "@/components/chat/thread-view";
 import type { Citation } from "@/components/chat/citation-row";
+import { DocumentViewer, type DocumentViewerTarget } from "@/components/viewer/document-viewer";
 import { SidebarNav, type SidebarSource } from "@/components/shell/sidebar-nav";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +65,8 @@ export function AppShell() {
     status: "idle",
     error: null,
   });
+
+  const [activeDocumentTarget, setActiveDocumentTarget] = useState<DocumentViewerTarget | null>(null);
 
   const composerRef = useRef<HTMLTextAreaElement>(null);
   const settingsTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -151,7 +154,7 @@ export function AppShell() {
   }
 
   async function startIngest(repoUrl: string, secret?: string) {
-    setIngestState({ jobId: null, status: "submitting", error: null });
+    setIngestState({ jobId: null, status: "submitting", error: null, kind: "github_repo" });
 
     try {
       const headers: Record<string, string> = {
@@ -174,12 +177,13 @@ export function AppShell() {
           jobId: null,
           status: "failed",
           error: data.error || `Ingest failed with HTTP status ${res.status}`,
+          kind: "github_repo",
         });
         return;
       }
 
       const jobId = data.jobId;
-      setIngestState({ jobId, status: "queued", error: null });
+      setIngestState({ jobId, status: "queued", error: null, kind: "github_repo" });
 
       // Start polling status
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
@@ -192,7 +196,7 @@ export function AppShell() {
 
           if (job.status === "succeeded") {
             if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-            setIngestState({ jobId, status: "succeeded", error: null });
+            setIngestState({ jobId, status: "succeeded", error: null, kind: "github_repo" });
 
             setSources(await fetchSources());
             if (job.sourceId) {
@@ -206,6 +210,7 @@ export function AppShell() {
               jobId,
               status: "failed",
               error: job.error || "Ingest job failed.",
+              kind: "github_repo",
             });
           } else if (job.status === "running") {
             setIngestState((prev) => ({ ...prev, status: "running" }));
@@ -216,7 +221,80 @@ export function AppShell() {
       }, 2000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to connect to server.";
-      setIngestState({ jobId: null, status: "failed", error: msg });
+      setIngestState({ jobId: null, status: "failed", error: msg, kind: "github_repo" });
+    }
+  }
+
+  async function startUploadIngest(file: File, secret?: string) {
+    setIngestState({ jobId: null, status: "submitting", error: null, kind: "upload" });
+
+    try {
+      const headers: Record<string, string> = {};
+      if (secret) {
+        headers["x-ingest-secret"] = secret;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setIngestState({
+          jobId: null,
+          status: "failed",
+          error: data.error || `Upload failed with HTTP status ${res.status}`,
+          kind: "upload",
+        });
+        return;
+      }
+
+      const jobId = data.jobId;
+      setIngestState({ jobId, status: "queued", error: null, kind: "upload" });
+
+      // Start polling status
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const statusRes = await fetch(`/api/ingest/${jobId}`);
+          if (!statusRes.ok) return;
+          const job = await statusRes.json();
+
+          if (job.status === "succeeded") {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            setIngestState({ jobId, status: "succeeded", error: null, kind: "upload" });
+
+            setSources(await fetchSources());
+            if (job.sourceId) {
+              setTimeout(() => {
+                selectSource(job.sourceId);
+              }, 600);
+            }
+          } else if (job.status === "failed") {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            setIngestState({
+              jobId,
+              status: "failed",
+              error: job.error || "Document indexing failed.",
+              kind: "upload",
+            });
+          } else if (job.status === "running") {
+            setIngestState((prev) => ({ ...prev, status: "running" }));
+          }
+        } catch {
+          // Poll retry on next tick
+        }
+      }, 2000);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Failed to connect to server.";
+      setIngestState({ jobId: null, status: "failed", error: msg, kind: "upload" });
     }
   }
 
@@ -416,6 +494,7 @@ export function AppShell() {
               showStarterCards={showStarterCards}
               onFillPrompt={fillPrompt}
               onStartIngest={startIngest}
+              onStartUploadIngest={startUploadIngest}
               ingestState={ingestState}
               onResetIngest={() =>
                 setIngestState({ jobId: null, status: "idle", error: null })
@@ -447,6 +526,16 @@ export function AppShell() {
               streamingCitations={streamingCitations}
               isStreaming={isStreaming}
               onRetry={(lastMsg) => handleSendQuestion(lastMsg)}
+              onCitationClick={(citation) => {
+                const currentSourceId = activeSourceId || sources[0]?.id;
+                if (!currentSourceId) return;
+                setActiveDocumentTarget({
+                  sourceId: citation.sourceId || currentSourceId,
+                  path: citation.path,
+                  startLine: citation.startLine,
+                  endLine: citation.endLine,
+                });
+              }}
             />
           ) : null}
           <Composer
@@ -463,6 +552,10 @@ export function AppShell() {
           />
         </main>
       </div>
+      <DocumentViewer
+        target={activeDocumentTarget}
+        onClose={() => setActiveDocumentTarget(null)}
+      />
       <Dialog
         open={settingsOpen}
         onOpenChange={(open) => {

@@ -8,6 +8,9 @@ export const tagline = "How can I help you today?";
 export const urlCardTitle = "Paste a GitHub URL";
 export const urlCardBody = "Index a public repo, then ask it with citations.";
 
+export const uploadCardTitle = "Upload a Document";
+export const uploadCardBody = "Upload a Markdown, plain text, or PDF file (up to 10 MB).";
+
 export const suggestionPrompts = [
   "Where does Next.js keep App Router pages?",
   "How do citations point at a file and line?",

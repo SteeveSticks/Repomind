@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
     // Check source existence
     const sourceResult = await db.execute(sql`
-      SELECT id, identity, origin_url
+      SELECT id, kind, identity, origin_url
       FROM sources
       WHERE id = ${sourceId}
       LIMIT 1
@@ -97,13 +97,14 @@ export async function POST(request: NextRequest) {
 
     if (sourceResult.rows.length === 0) {
       return NextResponse.json(
-        { error: "Source repository not found." },
+        { error: "Source repository or document not found." },
         { status: 404 },
       );
     }
 
     const source = sourceResult.rows[0] as {
       id: string;
+      kind: string;
       identity: string;
       origin_url: string;
     };
@@ -120,7 +121,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Repository indexing has not succeeded yet. Please wait for indexing to complete.",
+            "Document indexing has not succeeded yet. Please wait for indexing to complete.",
         },
         { status: 409 },
       );
@@ -179,15 +180,22 @@ export async function POST(request: NextRequest) {
 
     const retrievedChunks = (chunkResults.rows || []) as unknown as RetrievedChunk[];
 
+    const isUpload = source.kind === "upload";
+    const sourceTitle = isUpload ? (source.origin_url || "Uploaded Document") : source.identity;
+
     const formattedCitations = retrievedChunks.map((chunk) => {
       const label = `${chunk.path}:${chunk.start_line}`;
-      const href = `https://github.com/${source.identity}/blob/HEAD/${chunk.path}#L${chunk.start_line}-L${chunk.end_line}`;
+      const href = isUpload
+        ? `#doc-cite?sourceId=${source.id}&path=${encodeURIComponent(chunk.path)}&start=${chunk.start_line}&end=${chunk.end_line}`
+        : `https://github.com/${source.identity}/blob/HEAD/${chunk.path}#L${chunk.start_line}-L${chunk.end_line}`;
       return {
         label,
         href,
         path: chunk.path,
         startLine: chunk.start_line,
         endLine: chunk.end_line,
+        sourceId: source.id,
+        sourceKind: source.kind,
       };
     });
 
@@ -210,7 +218,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Assemble system prompt and context
-    const systemPrompt = `You are RepoMind, an AI assistant specialized in answering questions about code repositories.
+    const systemPrompt = isUpload
+      ? `You are RepoMind, an AI assistant specialized in answering questions about uploaded documents and notes.
+You are given the most relevant text chunks from the document '${sourceTitle}'.
+Answer the user's question accurately, concisely, and directly, explaining where in the document things are described.
+Ground your response in the provided document chunks. Refer to specific sections or lines where appropriate.`
+      : `You are RepoMind, an AI assistant specialized in answering questions about code repositories.
 You are given the most relevant code chunks from the repository '${source.identity}'.
 Answer the user's question accurately, concisely, and directly, explaining where in the code things happen.
 Ground your response in the provided code chunks. Refer to specific files and line numbers where appropriate.`;

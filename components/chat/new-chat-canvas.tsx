@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type DragEvent, type FormEvent } from "react";
 import {
   AlertCircleIcon,
   ArrowRightIcon,
   CheckCircle2Icon,
+  FileCodeIcon,
+  FileTextIcon,
+  FileUpIcon,
   KeyIcon,
   Loader2Icon,
+  UploadCloudIcon,
+  XIcon,
 } from "lucide-react";
 
 function GithubIcon({ className }: { className?: string }) {
@@ -27,14 +32,18 @@ import { Empty, EmptyContent, EmptyHeader } from "@/components/ui/empty";
 import {
   hello,
   tagline,
+  uploadCardBody,
+  uploadCardTitle,
   urlCardBody,
   urlCardTitle,
 } from "@/lib/placeholder-data";
+import { cn } from "@/lib/utils";
 
 export type IngestStatusState = {
   jobId: string | null;
   status: "idle" | "submitting" | "queued" | "running" | "succeeded" | "failed";
   error: string | null;
+  kind?: "github_repo" | "upload";
 };
 
 type NewChatCanvasProps = {
@@ -42,6 +51,7 @@ type NewChatCanvasProps = {
   showStarterCards: boolean;
   onFillPrompt: (prompt: string) => void;
   onStartIngest: (repoUrl: string, secret?: string) => Promise<void>;
+  onStartUploadIngest: (file: File, secret?: string) => Promise<void>;
   ingestState: IngestStatusState;
   onResetIngest: () => void;
 };
@@ -57,21 +67,74 @@ export function NewChatCanvas({
   showStarterCards,
   onFillPrompt,
   onStartIngest,
+  onStartUploadIngest,
   ingestState,
   onResetIngest,
 }: NewChatCanvasProps) {
+  const [activeTab, setActiveTab] = useState<"repo" | "upload">("repo");
   const [repoUrl, setRepoUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [secret, setSecret] = useState("");
   const [showSecretInput, setShowSecretInput] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!showStarterCards) {
     return <h1 className="sr-only">{hello}</h1>;
   }
 
-  async function handleSubmit(event: FormEvent) {
+  async function handleRepoSubmit(event: FormEvent) {
     event.preventDefault();
     if (!repoUrl.trim()) return;
     await onStartIngest(repoUrl.trim(), secret.trim() || undefined);
+  }
+
+  async function handleUploadSubmit(event: FormEvent) {
+    event.preventDefault();
+    if (!selectedFile) return;
+    await onStartUploadIngest(selectedFile, secret.trim() || undefined);
+  }
+
+  function handleFileSelect(file: File | undefined) {
+    if (!file) return;
+    const ext = file.name.toLowerCase();
+    if (
+      !ext.endsWith(".md") &&
+      !ext.endsWith(".markdown") &&
+      !ext.endsWith(".txt") &&
+      !ext.endsWith(".pdf")
+    ) {
+      alert("Please upload a supported file format (.md, .markdown, .txt, or .pdf).");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File exceeds maximum allowed size of 10 MB.");
+      return;
+    }
+    setSelectedFile(file);
+  }
+
+  function handleDragOver(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
   }
 
   const isWorking =
@@ -87,15 +150,49 @@ export function NewChatCanvas({
       </EmptyHeader>
       <EmptyContent className="max-w-3xl gap-5">
         <div className="flex w-full flex-col gap-4 rounded-sm bg-card/60 p-5 text-left border border-border">
+          {/* Mode Switcher Tabs */}
+          <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab("repo")}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
+                activeTab === "repo"
+                  ? "bg-accent text-accent-foreground shadow-xs"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <GithubIcon className="h-4 w-4" aria-hidden />
+              <span>GitHub Repository</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("upload")}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
+                activeTab === "upload"
+                  ? "bg-accent text-accent-foreground shadow-xs"
+                  : "bg-muted text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <FileUpIcon className="h-4 w-4" aria-hidden />
+              <span>Upload Document</span>
+            </button>
+          </div>
+
           <div>
             <div className="flex items-center gap-2">
-              <GithubIcon className="h-5 w-5 text-foreground" aria-hidden />
+              {activeTab === "repo" ? (
+                <GithubIcon className="h-5 w-5 text-foreground" aria-hidden />
+              ) : (
+                <UploadCloudIcon className="h-5 w-5 text-foreground" aria-hidden />
+              )}
               <p className="text-base font-semibold text-foreground">
-                {urlCardTitle}
+                {activeTab === "repo" ? urlCardTitle : uploadCardTitle}
               </p>
             </div>
             <p className="mt-1 text-sm font-normal text-muted-foreground">
-              {urlCardBody}
+              {activeTab === "repo" ? urlCardBody : uploadCardBody}
             </p>
           </div>
 
@@ -106,7 +203,7 @@ export function NewChatCanvas({
                 <div>
                   <p className="font-semibold text-sm">Indexing Failed</p>
                   <p className="text-xs mt-1 text-foreground">
-                    {ingestState.error || "An error occurred while indexing this repository."}
+                    {ingestState.error || "An error occurred while indexing this document."}
                   </p>
                 </div>
               </div>
@@ -131,10 +228,12 @@ export function NewChatCanvas({
                     {ingestState.status === "submitting" && "Submitting ingest request..."}
                     {ingestState.status === "queued" && "Queued in background worker..."}
                     {ingestState.status === "running" &&
-                      "Downloading repository and embedding code chunks..."}
+                      (ingestState.kind === "upload" || activeTab === "upload"
+                        ? "Extracting document text and embedding chunks..."
+                        : "Downloading repository and embedding code chunks...")}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    This usually takes 10 to 30 seconds depending on repository size.
+                    This usually takes 5 to 20 seconds.
                   </p>
                 </div>
               </div>
@@ -146,8 +245,8 @@ export function NewChatCanvas({
                 Indexing complete! Opening chat thread...
               </p>
             </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          ) : activeTab === "repo" ? (
+            <form onSubmit={handleRepoSubmit} className="flex flex-col gap-3">
               <div className="flex flex-col gap-2 sm:flex-row">
                 <div className="relative flex-1">
                   <input
@@ -206,6 +305,116 @@ export function NewChatCanvas({
                   <input
                     type="password"
                     id="ingest-secret-input"
+                    value={secret}
+                    onChange={(e) => setSecret(e.target.value)}
+                    placeholder="Enter INGEST_SECRET passphrase"
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
+              ) : null}
+            </form>
+          ) : (
+            <form onSubmit={handleUploadSubmit} className="flex flex-col gap-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".md,.markdown,.txt,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files && e.target.files.length > 0) {
+                    handleFileSelect(e.target.files[0]);
+                  }
+                }}
+              />
+
+              {/* Dropzone container */}
+              <div
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed p-6 text-center cursor-pointer transition-colors",
+                  isDragging
+                    ? "border-accent bg-accent/10"
+                    : selectedFile
+                      ? "border-accent/60 bg-card"
+                      : "border-border/80 bg-muted/20 hover:bg-muted/40 hover:border-border",
+                )}
+              >
+                {selectedFile ? (
+                  <div className="flex items-center justify-between w-full max-w-md bg-card p-3 rounded-md border border-border">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {selectedFile.name.toLowerCase().endsWith(".pdf") ? (
+                        <FileTextIcon className="h-5 w-5 text-accent shrink-0" aria-hidden />
+                      ) : (
+                        <FileCodeIcon className="h-5 w-5 text-accent shrink-0" aria-hidden />
+                      )}
+                      <div className="text-left min-w-0">
+                        <p className="text-xs font-semibold text-foreground truncate">
+                          {selectedFile.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {Math.round(selectedFile.size / 1024)} KB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedFile(null);
+                      }}
+                      className="p-1 rounded text-muted-foreground hover:text-destructive"
+                      aria-label="Remove selected file"
+                    >
+                      <XIcon className="h-4 w-4" aria-hidden />
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <UploadCloudIcon className="h-8 w-8 text-accent" aria-hidden />
+                    <p className="text-xs font-semibold text-foreground">
+                      Click to choose or drag and drop a file
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Supports Markdown (.md, .markdown), plain text (.txt), and PDF (.pdf) up to 10 MB
+                    </p>
+                  </>
+                )}
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowSecretInput((prev) => !prev)}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <KeyIcon className="h-3 w-3" aria-hidden />
+                  <span>{showSecretInput ? "Hide Secret" : "Add Ingest Secret"}</span>
+                </button>
+
+                <Button
+                  type="submit"
+                  disabled={!selectedFile || isWorking}
+                  className="h-10 gap-2 px-5"
+                >
+                  <span>Index Document</span>
+                  <ArrowRightIcon className="h-4 w-4" aria-hidden />
+                </Button>
+              </div>
+
+              {showSecretInput ? (
+                <div className="pt-2">
+                  <label
+                    htmlFor="upload-secret-input"
+                    className="block text-xs font-medium text-muted-foreground mb-1"
+                  >
+                    Ingest Secret (x-ingest-secret header for production deployments)
+                  </label>
+                  <input
+                    type="password"
+                    id="upload-secret-input"
                     value={secret}
                     onChange={(e) => setSecret(e.target.value)}
                     placeholder="Enter INGEST_SECRET passphrase"

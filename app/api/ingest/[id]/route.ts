@@ -20,6 +20,7 @@ export async function GET(
     const [job] = await db
       .select({
         id: ingestJobs.id,
+        kind: ingestJobs.kind,
         repoUrl: ingestJobs.repoUrl,
         status: ingestJobs.status,
         error: ingestJobs.error,

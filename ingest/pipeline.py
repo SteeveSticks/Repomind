@@ -1,6 +1,7 @@
 """RepoMind ingest worker pipeline."""
 
 import concurrent.futures
+import io
 import os
 import re
 import shutil
@@ -10,16 +11,18 @@ from dataclasses import dataclass
 from typing import Any
 from urllib.parse import urlparse
 
-from dotenv import load_dotenv
 import psycopg
+import pypdf
 import requests
 import voyageai
+from dotenv import load_dotenv
 from pgvector.psycopg import register_vector
 
 load_dotenv()
 
 MAX_UNPACKED_BYTES = 50 * 1024 * 1024  # 50 MB
 MAX_SINGLE_FILE_BYTES = 1024 * 1024  # 1 MB
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
 CHUNK_WINDOW_LINES = 80
 CHUNK_OVERLAP_LINES = 10
 CHUNK_STEP_LINES = CHUNK_WINDOW_LINES - CHUNK_OVERLAP_LINES  # 70 lines
@@ -301,6 +304,68 @@ def chunk_text(file_path: str, content: str) -> list[CodeChunk]:
     return chunks
 
 
+def extract_pdf_chunks(filename: str, pdf_bytes: bytes) -> list[CodeChunk]:
+    """
+    Extract text chunks per page from PDF bytes using pypdf.
+    Synthesizes line numbers per page, creating 80-line chunks with 10-line overlap.
+    """
+    if not pdf_bytes:
+        raise IngestError("empty_file", "PDF file data is empty.")
+
+    try:
+        reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
+    except Exception as err:
+        raise IngestError("unreadable_pdf", f"Failed to parse PDF: {err}") from err
+
+    if reader.is_encrypted:
+        try:
+            decrypt_result = reader.decrypt("")
+            if decrypt_result == pypdf.errors.PasswordType.NOT_DECRYPTED:
+                raise IngestError(
+                    "unreadable_pdf",
+                    "PDF is password protected and cannot be read.",
+                )
+        except IngestError:
+            raise
+        except Exception as err:
+            raise IngestError(
+                "unreadable_pdf",
+                f"PDF is password protected or encrypted: {err}",
+            ) from err
+
+    if len(reader.pages) == 0:
+        raise IngestError("empty_file", "PDF contains no pages.")
+
+    all_chunks: list[CodeChunk] = []
+    has_any_text = False
+
+    for page_idx, page in enumerate(reader.pages, start=1):
+        try:
+            page_text = page.extract_text() or ""
+        except Exception as err:
+            raise IngestError(
+                "unreadable_pdf",
+                f"Failed to extract text from page {page_idx}: {err}",
+            ) from err
+
+        page_text = page_text.strip()
+        if not page_text:
+            continue
+
+        has_any_text = True
+        page_path = f"{filename} (Page {page_idx})"
+        page_chunks = chunk_text(page_path, page_text)
+        all_chunks.extend(page_chunks)
+
+    if not has_any_text or not all_chunks:
+        raise IngestError(
+            "empty_file",
+            "PDF contains no extractable text (e.g. scanned images without OCR).",
+        )
+
+    return all_chunks
+
+
 def collect_repo_chunks(root_dir: str) -> list[CodeChunk]:
     """Traverse unpacked repository and extract chunks from valid UTF-8 source files."""
     all_chunks: list[CodeChunk] = []
@@ -450,7 +515,7 @@ def process_ingest_job(job_id: str) -> dict[str, Any]:
     try:
         with conn.cursor() as cur:
             cur.execute(
-                "SELECT id, repo_url, status FROM ingest_jobs WHERE id = %s",
+                "SELECT id, kind, repo_url, status FROM ingest_jobs WHERE id = %s",
                 (job_id,),
             )
             row = cur.fetchone()
@@ -459,7 +524,10 @@ def process_ingest_job(job_id: str) -> dict[str, Any]:
                     "job_not_found", f"Job ID {job_id} not found in database."
                 )
 
-            _, repo_url, _ = row
+            _, kind, repo_url, _ = row
+            if kind == "upload":
+                conn.close()
+                return process_upload_job(job_id)
 
             # Mark job running
             cur.execute(
@@ -608,3 +676,189 @@ def process_ingest_job(job_id: str) -> dict[str, Any]:
     finally:
         conn.close()
         shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def process_upload_job(job_id: str) -> dict[str, Any]:
+    """Execute complete ingest pipeline for an uploaded document job ID."""
+    conn = get_db_connection()
+
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, source_id, status FROM ingest_jobs WHERE id = %s",
+                (job_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise IngestError(
+                    "job_not_found", f"Job ID {job_id} not found in database."
+                )
+
+            _, source_id, _ = row
+            if not source_id:
+                raise IngestError(
+                    "job_not_found", f"Upload job {job_id} is missing source_id."
+                )
+
+            # Mark job running
+            cur.execute(
+                """
+                UPDATE ingest_jobs
+                SET status = 'running', started_at = NOW(), error = NULL
+                WHERE id = %s
+                """,
+                (job_id,),
+            )
+            conn.commit()
+
+            # Fetch source_files
+            cur.execute(
+                """
+                SELECT filename, mime_type, byte_size, raw_text, file_data
+                FROM source_files
+                WHERE source_id = %s
+                """,
+                (source_id,),
+            )
+            file_row = cur.fetchone()
+            if not file_row:
+                raise IngestError(
+                    "file_not_found",
+                    f"No uploaded file found for source {source_id}.",
+                )
+
+            filename, mime_type, byte_size, raw_text, file_data = file_row
+
+        if byte_size > MAX_UPLOAD_BYTES:
+            raise IngestError(
+                "too_large",
+                "Uploaded file exceeds 10 MB size limit.",
+            )
+
+        # Chunk document
+        is_pdf = filename.lower().endswith(".pdf") or mime_type == "application/pdf"
+        if is_pdf:
+            if file_data is None:
+                raise IngestError("empty_file", "PDF file data is empty.")
+            pdf_bytes = bytes(file_data)
+            chunks = extract_pdf_chunks(filename, pdf_bytes)
+        else:
+            text_content = raw_text
+            if text_content is None and file_data is not None:
+                try:
+                    text_content = bytes(file_data).decode("utf-8")
+                except UnicodeDecodeError as err:
+                    raise IngestError(
+                        "bad_file_type",
+                        "File content is not valid UTF-8 text.",
+                    ) from err
+
+            if not text_content or not text_content.strip():
+                raise IngestError("empty_file", "Uploaded file contains no text.")
+
+            chunks = chunk_text(filename, text_content)
+
+        if not chunks:
+            raise IngestError(
+                "empty_file",
+                "No indexable content found in uploaded document.",
+            )
+
+        # Generate embeddings
+        embeddings = generate_embeddings(chunks)
+
+        # Write to Postgres
+        with conn.cursor() as cur:
+            # Update source timestamp
+            cur.execute(
+                "UPDATE sources SET updated_at = NOW() WHERE id = %s",
+                (source_id,),
+            )
+
+            # Ensure chat exists
+            cur.execute(
+                """
+                INSERT INTO chats (id, source_id, created_at, updated_at)
+                VALUES (gen_random_uuid(), %s, NOW(), NOW())
+                ON CONFLICT (source_id) DO NOTHING
+                """,
+                (source_id,),
+            )
+
+            # Delete old chunks for this source
+            cur.execute("DELETE FROM chunks WHERE source_id = %s", (source_id,))
+
+            # Batch insert new chunks
+            chunk_records = []
+            for chunk, emb in zip(chunks, embeddings):
+                chunk_records.append(
+                    (
+                        source_id,
+                        job_id,
+                        chunk.path,
+                        chunk.start_line,
+                        chunk.end_line,
+                        chunk.text,
+                        emb,
+                    )
+                )
+
+            cur.executemany(
+                """
+                INSERT INTO chunks (id, source_id, job_id, path, start_line, end_line, text, embedding)
+                VALUES (gen_random_uuid(), %s, %s, %s, %s, %s, %s, %s)
+                """,
+                chunk_records,
+            )
+
+            # Mark job succeeded
+            cur.execute(
+                """
+                UPDATE ingest_jobs
+                SET status = 'succeeded', finished_at = NOW(), error = NULL
+                WHERE id = %s
+                """,
+                (job_id,),
+            )
+            conn.commit()
+
+        return {
+            "status": "succeeded",
+            "jobId": job_id,
+            "sourceId": str(source_id),
+            "chunksCount": len(chunks),
+        }
+
+    except IngestError as err:
+        conn.rollback()
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE ingest_jobs
+                SET status = 'failed', finished_at = NOW(), error = %s
+                WHERE id = %s
+                """,
+                (f"{err.code}: {err.message}", job_id),
+            )
+            cur.execute("DELETE FROM chunks WHERE job_id = %s", (job_id,))
+            conn.commit()
+        return {"status": "failed", "jobId": job_id, "error": str(err)}
+
+    except Exception as err:  # noqa: BLE001
+        conn.rollback()
+        safe_msg = f"internal_error: Unexpected error during document ingestion: {err}"
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE ingest_jobs
+                SET status = 'failed', finished_at = NOW(), error = %s
+                WHERE id = %s
+                """,
+                (safe_msg, job_id),
+            )
+            cur.execute("DELETE FROM chunks WHERE job_id = %s", (job_id,))
+            conn.commit()
+        return {"status": "failed", "jobId": job_id, "error": safe_msg}
+
+    finally:
+        conn.close()

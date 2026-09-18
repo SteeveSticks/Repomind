@@ -45,6 +45,8 @@ next-env.d.ts
 /.agent
 /.agents/
 /.claude
+/.cursor
+/.cursor/skills/
 /.mcp.json
 
 # python ingest
@@ -57,3 +59,4 @@ __pycache__/
 .mypy_cache/
 
 .trigger
+.aider*

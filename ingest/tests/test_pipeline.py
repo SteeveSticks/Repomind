@@ -184,3 +184,318 @@ def test_download_tarball_url_includes_head_ref(monkeypatch, tmp_path):
     assert captured_url["url"] == (
         "https://codeload.github.com/octocat/Hello-World/tar.gz/HEAD"
     )
+
+
+def test_extract_pdf_chunks_valid():
+    import pypdf
+
+    from pipeline import extract_pdf_chunks
+
+    writer = pypdf.PdfWriter()
+    # Add page with text
+    writer.add_blank_page(width=200, height=200)
+    # Since add_blank_page has no text, let's test with PdfWriter + annotations or simulated text extraction
+    # Better yet, create a small PDF with text or mock page.extract_text
+    buf = io.BytesIO()
+    writer.write(buf)
+    pdf_bytes = buf.getvalue()
+
+    # Empty page should raise empty_file
+    with pytest.raises(IngestError) as exc_info:
+        extract_pdf_chunks("doc.pdf", pdf_bytes)
+    assert exc_info.value.code == "empty_file"
+
+
+def test_extract_pdf_chunks_empty_bytes():
+    from pipeline import extract_pdf_chunks
+
+    with pytest.raises(IngestError) as exc_info:
+        extract_pdf_chunks("empty.pdf", b"")
+    assert exc_info.value.code == "empty_file"
+
+
+def test_extract_pdf_chunks_corrupted():
+    from pipeline import extract_pdf_chunks
+
+    with pytest.raises(IngestError) as exc_info:
+        extract_pdf_chunks("corrupted.pdf", b"not a real pdf content")
+    assert exc_info.value.code == "unreadable_pdf"
+
+
+def test_extract_pdf_chunks_with_text(monkeypatch):
+    import pypdf
+
+    from pipeline import extract_pdf_chunks
+
+    writer = pypdf.PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buf = io.BytesIO()
+    writer.write(buf)
+    pdf_bytes = buf.getvalue()
+
+    def fake_extract_text(self):
+        return "Line 1: Introduction\nLine 2: Overview\nLine 3: Details"
+
+    monkeypatch.setattr(pypdf.PageObject, "extract_text", fake_extract_text)
+
+    chunks = extract_pdf_chunks("report.pdf", pdf_bytes)
+    assert len(chunks) == 1
+    assert chunks[0].path == "report.pdf (Page 1)"
+    assert chunks[0].start_line == 1
+    assert chunks[0].end_line == 3
+    assert "Line 1: Introduction" in chunks[0].text
+
+
+def test_extract_pdf_chunks_multiple_pages(monkeypatch):
+    """AC-3: Extract text across multiple pages with page numbers and line ranges."""
+    import pypdf
+
+    from pipeline import extract_pdf_chunks
+
+    writer = pypdf.PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    writer.add_blank_page(width=200, height=200)
+    buf = io.BytesIO()
+    writer.write(buf)
+    pdf_bytes = buf.getvalue()
+
+    call_count = 0
+
+    def fake_extract_text(self):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            return "Page 1 Line 1\nPage 1 Line 2"
+        return "Page 2 Line 1\nPage 2 Line 2"
+
+    monkeypatch.setattr(pypdf.PageObject, "extract_text", fake_extract_text)
+
+    chunks = extract_pdf_chunks("multi.pdf", pdf_bytes)
+    assert len(chunks) == 2
+    assert chunks[0].path == "multi.pdf (Page 1)"
+    assert chunks[0].start_line == 1
+    assert chunks[0].end_line == 2
+    assert "Page 1 Line 1" in chunks[0].text
+
+    assert chunks[1].path == "multi.pdf (Page 2)"
+    assert chunks[1].start_line == 1
+    assert chunks[1].end_line == 2
+    assert "Page 2 Line 1" in chunks[1].text
+
+
+def test_extract_pdf_chunks_encrypted_fails(monkeypatch):
+    """AC-8: Password protected or encrypted PDF raises unreadable_pdf."""
+    from unittest.mock import MagicMock
+
+    import pypdf
+
+    from pipeline import extract_pdf_chunks
+
+    mock_reader = MagicMock()
+    mock_reader.is_encrypted = True
+    mock_reader.decrypt.return_value = pypdf.PasswordType.NOT_DECRYPTED
+
+    monkeypatch.setattr(pypdf, "PdfReader", lambda stream: mock_reader)
+
+    with pytest.raises(IngestError) as exc_info:
+        extract_pdf_chunks("secret.pdf", b"%PDF-fake")
+    assert exc_info.value.code == "unreadable_pdf"
+    assert "password" in exc_info.value.message.lower()
+
+
+def test_extract_pdf_chunks_scanned_empty_text(monkeypatch):
+    """AC-8: Scanned PDF without text raises empty_file."""
+    import pypdf
+
+    from pipeline import extract_pdf_chunks
+
+    writer = pypdf.PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buf = io.BytesIO()
+    writer.write(buf)
+    pdf_bytes = buf.getvalue()
+
+    monkeypatch.setattr(pypdf.PageObject, "extract_text", lambda self: "   \n\n  ")
+
+    with pytest.raises(IngestError) as exc_info:
+        extract_pdf_chunks("scanned.pdf", pdf_bytes)
+    assert exc_info.value.code == "empty_file"
+
+
+def test_process_upload_job_markdown_success(monkeypatch):
+    """AC-1, AC-3: Full upload ingestion workflow for Markdown document."""
+    from unittest.mock import MagicMock
+
+    from pipeline import process_upload_job
+
+    fake_conn = MagicMock()
+    fake_cursor = MagicMock()
+    fake_conn.cursor.return_value.__enter__.return_value = fake_cursor
+
+    # Query 1: fetch job -> (id, source_id, status)
+    # Query 2: fetch source_files -> (filename, mime_type, byte_size, raw_text, file_data)
+    fake_cursor.fetchone.side_effect = [
+        ("job-123", "src-456", "queued"),
+        ("notes.md", "text/markdown", 100, "# Heading\nLine 2\nLine 3", None),
+    ]
+
+    monkeypatch.setattr("pipeline.get_db_connection", lambda: fake_conn)
+    monkeypatch.setattr(
+        "pipeline.generate_embeddings",
+        lambda chunks: [[0.1] * 1024 for _ in chunks],
+    )
+
+    result = process_upload_job("job-123")
+
+    assert result["status"] == "succeeded"
+    assert result["jobId"] == "job-123"
+    assert result["sourceId"] == "src-456"
+    assert result["chunksCount"] == 1
+    assert fake_conn.commit.called
+
+
+def test_process_upload_job_pdf_success(monkeypatch):
+    """AC-1, AC-3: Full upload ingestion workflow for PDF document."""
+    from unittest.mock import MagicMock
+
+    import pypdf
+
+    from pipeline import process_upload_job
+
+    writer = pypdf.PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buf = io.BytesIO()
+    writer.write(buf)
+    pdf_bytes = buf.getvalue()
+
+    fake_conn = MagicMock()
+    fake_cursor = MagicMock()
+    fake_conn.cursor.return_value.__enter__.return_value = fake_cursor
+
+    fake_cursor.fetchone.side_effect = [
+        ("job-pdf", "src-pdf", "queued"),
+        ("paper.pdf", "application/pdf", len(pdf_bytes), None, pdf_bytes),
+    ]
+
+    monkeypatch.setattr("pipeline.get_db_connection", lambda: fake_conn)
+    monkeypatch.setattr(
+        pypdf.PageObject,
+        "extract_text",
+        lambda self: "Abstract: Testing RepoMind.\nConclusion: Works.",
+    )
+    monkeypatch.setattr(
+        "pipeline.generate_embeddings",
+        lambda chunks: [[0.2] * 1024 for _ in chunks],
+    )
+
+    result = process_upload_job("job-pdf")
+
+    assert result["status"] == "succeeded"
+    assert result["jobId"] == "job-pdf"
+    assert result["sourceId"] == "src-pdf"
+    assert result["chunksCount"] == 1
+    assert fake_conn.commit.called
+
+
+def test_process_upload_job_too_large(monkeypatch):
+    """AC-8: Uploaded file exceeding 10MB fails with too_large."""
+    from unittest.mock import MagicMock
+
+    from pipeline import MAX_UPLOAD_BYTES, process_upload_job
+
+    fake_conn = MagicMock()
+    fake_cursor = MagicMock()
+    fake_conn.cursor.return_value.__enter__.return_value = fake_cursor
+
+    fake_cursor.fetchone.side_effect = [
+        ("job-too-large", "src-large", "queued"),
+        ("huge.md", "text/markdown", MAX_UPLOAD_BYTES + 1024, "# Huge", None),
+    ]
+
+    monkeypatch.setattr("pipeline.get_db_connection", lambda: fake_conn)
+
+    result = process_upload_job("job-too-large")
+    assert result["status"] == "failed"
+    assert "too_large" in result["error"]
+    assert fake_conn.rollback.called
+
+
+def test_process_upload_job_missing_job(monkeypatch):
+    """AC-8: Missing job ID records job_not_found error."""
+    from unittest.mock import MagicMock
+
+    from pipeline import process_upload_job
+
+    fake_conn = MagicMock()
+    fake_cursor = MagicMock()
+    fake_conn.cursor.return_value.__enter__.return_value = fake_cursor
+    fake_cursor.fetchone.return_value = None
+
+    monkeypatch.setattr("pipeline.get_db_connection", lambda: fake_conn)
+
+    result = process_upload_job("non-existent-job")
+    assert result["status"] == "failed"
+    assert "job_not_found" in result["error"]
+
+
+def test_process_upload_job_missing_source_files(monkeypatch):
+    """AC-8: Job with missing source_files row records file_not_found error."""
+    from unittest.mock import MagicMock
+
+    from pipeline import process_upload_job
+
+    fake_conn = MagicMock()
+    fake_cursor = MagicMock()
+    fake_conn.cursor.return_value.__enter__.return_value = fake_cursor
+    fake_cursor.fetchone.side_effect = [
+        ("job-no-file", "src-missing-file", "queued"),
+        None,
+    ]
+
+    monkeypatch.setattr("pipeline.get_db_connection", lambda: fake_conn)
+
+    result = process_upload_job("job-no-file")
+    assert result["status"] == "failed"
+    assert "file_not_found" in result["error"]
+
+
+def test_process_upload_job_invalid_utf8_text(monkeypatch):
+    """AC-8: Text file with corrupt binary bytes records bad_file_type error."""
+    from unittest.mock import MagicMock
+
+    from pipeline import process_upload_job
+
+    fake_conn = MagicMock()
+    fake_cursor = MagicMock()
+    fake_conn.cursor.return_value.__enter__.return_value = fake_cursor
+    fake_cursor.fetchone.side_effect = [
+        ("job-corrupt-txt", "src-corrupt-txt", "queued"),
+        ("corrupt.txt", "text/plain", 10, None, b"\xff\xfe\xfa\xfb"),
+    ]
+
+    monkeypatch.setattr("pipeline.get_db_connection", lambda: fake_conn)
+
+    result = process_upload_job("job-corrupt-txt")
+    assert result["status"] == "failed"
+    assert "bad_file_type" in result["error"]
+
+
+def test_process_upload_job_empty_text(monkeypatch):
+    """AC-8: Text file with whitespace only records empty_file error."""
+    from unittest.mock import MagicMock
+
+    from pipeline import process_upload_job
+
+    fake_conn = MagicMock()
+    fake_cursor = MagicMock()
+    fake_conn.cursor.return_value.__enter__.return_value = fake_cursor
+    fake_cursor.fetchone.side_effect = [
+        ("job-empty-txt", "src-empty-txt", "queued"),
+        ("empty.txt", "text/plain", 5, "   \n\n  ", None),
+    ]
+
+    monkeypatch.setattr("pipeline.get_db_connection", lambda: fake_conn)
+
+    result = process_upload_job("job-empty-txt")
+    assert result["status"] == "failed"
+    assert "empty_file" in result["error"]
