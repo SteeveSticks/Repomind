@@ -29,6 +29,7 @@ type ThreadViewProps = {
   streamingCitations?: Citation[];
   isStreaming?: boolean;
   onRetry?: (lastUserMessage: string) => void;
+  onCitationClick?: (citation: Citation) => void;
 };
 
 export function ThreadView({
@@ -37,6 +38,7 @@ export function ThreadView({
   streamingCitations = [],
   isStreaming = false,
   onRetry,
+  onCitationClick,
 }: ThreadViewProps) {
   const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
 
@@ -95,6 +97,7 @@ export function ThreadView({
                               <CitationRow
                                 citations={message.citations}
                                 copyText={message.content}
+                                onCitationClick={onCitationClick}
                               />
                             </MessageFooter>
                           ) : null}
@@ -118,6 +121,7 @@ export function ThreadView({
                             <CitationRow
                               citations={streamingCitations}
                               copyText={streamingContent}
+                              onCitationClick={onCitationClick}
                             />
                           </MessageFooter>
                         ) : null}

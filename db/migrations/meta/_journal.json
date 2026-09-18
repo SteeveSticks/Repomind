@@ -8,6 +8,13 @@
       "when": 1786747559729,
       "tag": "0000_spooky_maggott",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1786748500000,
+      "tag": "0001_upload_schema",
+      "breakpoints": true
     }
   ]
 }

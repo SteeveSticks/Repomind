@@ -4,6 +4,7 @@
 import { sql } from "drizzle-orm";
 import {
   check,
+  customType,
   index,
   integer,
   pgTable,
@@ -15,6 +16,12 @@ import {
   uuid,
   vector,
 } from "drizzle-orm/pg-core";
+
+export const bytea = customType<{ data: Buffer; driverData: Buffer }>({
+  dataType() {
+    return "bytea";
+  },
+});
 
 export const sources = pgTable(
   "sources",
@@ -32,16 +39,36 @@ export const sources = pgTable(
       .defaultNow(),
   },
   (table) => [
-    check("sources_kind_check", sql`${table.kind} IN ('github_repo')`),
+    check("sources_kind_check", sql`${table.kind} IN ('github_repo', 'upload')`),
     unique("sources_kind_identity_key").on(table.kind, table.identity),
   ],
+);
+
+export const sourceFiles = pgTable(
+  "source_files",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourceId: uuid("source_id")
+      .notNull()
+      .unique()
+      .references(() => sources.id, { onDelete: "cascade" }),
+    filename: text("filename").notNull(),
+    mimeType: text("mime_type").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    rawText: text("raw_text"),
+    fileData: bytea("file_data"),
+    createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
+  },
 );
 
 export const ingestJobs = pgTable(
   "ingest_jobs",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    repoUrl: text("repo_url").notNull(),
+    kind: text("kind").notNull().default("github_repo"),
+    repoUrl: text("repo_url"),
     status: text("status").notNull(),
     error: text("error"),
     sourceId: uuid("source_id").references(() => sources.id, {
@@ -54,6 +81,7 @@ export const ingestJobs = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true, mode: "date" }),
   },
   (table) => [
+    check("ingest_jobs_kind_check", sql`${table.kind} IN ('github_repo', 'upload')`),
     check(
       "ingest_jobs_status_check",
       sql`${table.status} IN ('queued', 'running', 'succeeded', 'failed')`,

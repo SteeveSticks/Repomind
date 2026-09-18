@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 export async function GET() {
   try {
     const result = await db.execute(sql`
-      SELECT s.id, s.identity, s.origin_url AS "originUrl", s.created_at AS "createdAt",
+      SELECT s.id, s.kind, s.identity, s.origin_url AS "originUrl", s.created_at AS "createdAt",
              j.status AS "latestJobStatus"
       FROM sources s
       LEFT JOIN LATERAL (

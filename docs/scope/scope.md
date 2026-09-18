@@ -18,7 +18,7 @@ _These are recommendations to keep your build orderly, not requirements. Skip an
 | 4 | Design system & UI foundation | Foundation | done |
 | 5 | Ask a public repo | Slice 1 | done |
 | 6 | Document history | Slice 2 | planned |
-| 7 | Upload markdown and PDF | Slice 3 | planned |
+| 7 | Upload markdown and PDF | Slice 3 | in-progress |
 | 8 | Sign in and accounts | Slice 4 | planned |
 | 9 | Public ask page | Slice 5 | in-progress |
 | 10 | Usage metering | Slice 6 | planned |
@@ -100,10 +100,19 @@ A sidebar of past indexed sources so you can work on a second repo without losin
 
 ## Slice 3: Docs, not only GitHub
 
-### 7. Upload markdown and PDF · needs a decision
+### 7. Upload markdown and PDF · in-progress
 Another way in, so API docs and writeups work when there is no GitHub repo to clone.
 **Done when:** you can drop a markdown or PDF file, it indexes, and you can ask it with the same cited chat as a repo.
-- [ ] Design it (spec): `/architect upload markdown and PDF`
+spec [0006](../specs/0006-upload-markdown-pdf/index.md) · code in `app/api/upload/`, `app/api/sources/[id]/file/`, `components/viewer/`, `trigger/ingest-upload.ts`
+- [x] Design it (spec): `/architect upload markdown and PDF`
+- [x] Build it: `/develop upload markdown and PDF`
+  - [x] Migration and source files schema (AC-1, AC-2, AC-8)
+  - [x] Python worker upload ingest pipeline with pypdf (AC-1, AC-3, AC-8)
+  - [x] Upload route handler with multipart validation (AC-1, AC-7, AC-8)
+  - [x] UI upload dropzone and card workflow (AC-1, AC-2, AC-3)
+  - [x] In app document viewer and citation highlights (AC-4, AC-5, AC-6)
+- [ ] Verify it: `/check verify upload markdown and PDF`
+- [x] Test it: `/test upload markdown and PDF`
 
 ## Slice 4: A person to attach work to
 

@@ -17,14 +17,21 @@ export type Citation = {
   path?: string;
   startLine?: number;
   endLine?: number;
+  sourceId?: string;
+  sourceKind?: string;
 };
 
 type CitationRowProps = {
   citations: Citation[];
   copyText: string;
+  onCitationClick?: (citation: Citation) => void;
 };
 
-export function CitationRow({ citations, copyText }: CitationRowProps) {
+export function CitationRow({
+  citations,
+  copyText,
+  onCitationClick,
+}: CitationRowProps) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -39,18 +46,39 @@ export function CitationRow({ citations, copyText }: CitationRowProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-2 pt-2">
-      {citations.map((citation, idx) => (
-        <a
-          key={`${citation.href}-${idx}`}
-          href={citation.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground hover:bg-muted focus:ring-2 focus:ring-ring focus:outline-none"
-        >
-          <span>{citation.label}</span>
-          <ExternalLinkIcon className="h-3 w-3 text-muted-foreground" aria-hidden />
-        </a>
-      ))}
+      {citations.map((citation, idx) => {
+        const isUploadCitation =
+          citation.sourceKind === "upload" ||
+          citation.href.startsWith("#doc-cite");
+
+        if (isUploadCitation && onCitationClick) {
+          return (
+            <button
+              key={`${citation.href}-${idx}`}
+              type="button"
+              onClick={() => onCitationClick(citation)}
+              className="inline-flex min-h-8 cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground hover:bg-muted hover:border-accent focus:ring-2 focus:ring-ring focus:outline-none"
+              title="Open in document viewer"
+            >
+              <span>{citation.label}</span>
+              <ExternalLinkIcon className="h-3 w-3 text-accent" aria-hidden />
+            </button>
+          );
+        }
+
+        return (
+          <a
+            key={`${citation.href}-${idx}`}
+            href={citation.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-foreground hover:bg-muted focus:ring-2 focus:ring-ring focus:outline-none"
+          >
+            <span>{citation.label}</span>
+            <ExternalLinkIcon className="h-3 w-3 text-muted-foreground" aria-hidden />
+          </a>
+        );
+      })}
       <Button
         type="button"
         variant="ghost"
