@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { MenuIcon } from "lucide-react";
 
 import { Composer } from "@/components/chat/composer";
+import { FileTypeDialog } from "@/components/chat/file-type-dialog";
 import {
   NewChatCanvas,
   type IngestStatusState,
@@ -59,6 +60,9 @@ export function AppShell() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [canvasTab, setCanvasTab] = useState<"repo" | "upload">("repo");
+  const [stagedFile, setStagedFile] = useState<File | null>(null);
 
   const [ingestState, setIngestState] = useState<IngestStatusState>({
     jobId: null,
@@ -130,12 +134,21 @@ export function AppShell() {
   function resetToNew() {
     setView("new");
     setActiveSourceId(null);
+    setCanvasTab("repo");
+    setStagedFile(null);
     setThreadMessages([]);
     setStreamingContent("");
     setStreamingCitations([]);
     setIngestState({ jobId: null, status: "idle", error: null });
     setDraft("");
     setMenuOpen(false);
+  }
+
+  function handleConfirmUploadDialog(file: File | null) {
+    setView("new");
+    setCanvasTab("upload");
+    setStagedFile(file);
+    setUploadDialogOpen(false);
   }
 
   async function selectSource(sourceId: string) {
@@ -499,6 +512,8 @@ export function AppShell() {
               onResetIngest={() =>
                 setIngestState({ jobId: null, status: "idle", error: null })
               }
+              initialTab={canvasTab}
+              initialFile={stagedFile}
             />
           ) : (
             <div className="flex items-center justify-between border-b border-border px-4 py-2 text-xs text-muted-foreground md:px-10">
@@ -549,12 +564,18 @@ export function AppShell() {
                 ? `Ask a question about ${activeSource.identity}...`
                 : "Ask a question..."
             }
+            onOpenUpload={() => setUploadDialogOpen(true)}
           />
         </main>
       </div>
       <DocumentViewer
         target={activeDocumentTarget}
         onClose={() => setActiveDocumentTarget(null)}
+      />
+      <FileTypeDialog
+        open={uploadDialogOpen}
+        onOpenChange={setUploadDialogOpen}
+        onConfirm={handleConfirmUploadDialog}
       />
       <Dialog
         open={settingsOpen}

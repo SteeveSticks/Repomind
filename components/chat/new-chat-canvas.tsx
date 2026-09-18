@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import {
   AlertCircleIcon,
   ArrowRightIcon,
@@ -54,6 +54,8 @@ type NewChatCanvasProps = {
   onStartUploadIngest: (file: File, secret?: string) => Promise<void>;
   ingestState: IngestStatusState;
   onResetIngest: () => void;
+  initialTab?: "repo" | "upload";
+  initialFile?: File | null;
 };
 
 const sampleRepos = [
@@ -70,13 +72,28 @@ export function NewChatCanvas({
   onStartUploadIngest,
   ingestState,
   onResetIngest,
+  initialTab = "repo",
+  initialFile = null,
 }: NewChatCanvasProps) {
-  const [activeTab, setActiveTab] = useState<"repo" | "upload">("repo");
+  const [activeTab, setActiveTab] = useState<"repo" | "upload">(initialTab);
   const [repoUrl, setRepoUrl] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(initialFile);
   const [isDragging, setIsDragging] = useState(false);
   const [secret, setSecret] = useState("");
   const [showSecretInput, setShowSecretInput] = useState(false);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (initialFile) {
+      setSelectedFile(initialFile);
+      setActiveTab("upload");
+    }
+  }, [initialFile]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

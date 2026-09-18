@@ -29,6 +29,7 @@ type ComposerProps = {
   inputRef: RefObject<HTMLTextAreaElement | null>;
   disabled?: boolean;
   placeholder?: string;
+  onOpenUpload?: () => void;
 };
 
 const singleLineHeight = 44;
@@ -40,6 +41,7 @@ export function Composer({
   inputRef,
   disabled = false,
   placeholder = composerPlaceholder,
+  onOpenUpload,
 }: ComposerProps) {
   const canSend = value.trim().length > 0 && !disabled;
   const [multiline, setMultiline] = useState(false);
@@ -89,10 +91,14 @@ export function Composer({
                 <InputGroupButton
                   type="button"
                   aria-label={addLabel}
-                  aria-disabled="true"
                   disabled={disabled}
-                  className="h-9 w-9 min-h-9 min-w-9 rounded-full md:h-11 md:w-11 md:min-h-11 md:min-w-11"
-                  onClick={(event) => event.preventDefault()}
+                  className="h-9 w-9 min-h-9 min-w-9 rounded-full md:h-11 md:w-11 md:min-h-11 md:min-w-11 cursor-pointer"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    if (!disabled && onOpenUpload) {
+                      onOpenUpload();
+                    }
+                  }}
                 >
                   <PlusIcon aria-hidden />
                 </InputGroupButton>

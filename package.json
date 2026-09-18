@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "lint:ingest": "uv run --directory ingest ruff check . && uv run --directory ingest ruff format --check .",
+    "deploy:trigger": "npx trigger.dev@latest deploy",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate"
   },
