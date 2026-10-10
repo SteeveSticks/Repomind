@@ -186,6 +186,96 @@ def test_download_tarball_url_includes_head_ref(monkeypatch, tmp_path):
     )
 
 
+def test_download_tarball_public_repo_no_bearer_sent(monkeypatch, tmp_path):
+    """Regression: codeload rejects Bearer tokens for public repos (returns 404).
+
+    When GITHUB_TOKEN is set and the first unauthenticated request succeeds
+    (status 200), no Authorization header must appear in the request.
+    """
+    captured_headers = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def iter_content(self, chunk_size=65536):
+            return [b"fake tarball data"]
+
+    def fake_get(url, **kwargs):
+        captured_headers.update(kwargs.get("headers", {}))
+        return FakeResponse()
+
+    monkeypatch.setattr("pipeline.requests.get", fake_get)
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_faketoken123")
+
+    dest = str(tmp_path / "repo.tar.gz")
+    download_tarball("TheAlgorithms", "Python", dest)
+
+    assert "Authorization" not in captured_headers
+
+
+def test_download_tarball_private_repo_retries_with_token_scheme(monkeypatch, tmp_path):
+    """Regression: when the unauthenticated request returns 404 and a token
+    is available, the retry must use the ``token`` auth scheme, not ``Bearer``.
+    """
+    call_count = 0
+    captured_auth = {}
+
+    class FakeNotFound:
+        status_code = 404
+
+        def close(self):
+            pass
+
+    class FakeOk:
+        status_code = 200
+
+        def iter_content(self, chunk_size=65536):
+            return [b"fake private tarball"]
+
+    def fake_get(url, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        headers = kwargs.get("headers", {})
+        if call_count == 1:
+            # First call: unauthenticated, simulate private repo
+            assert "Authorization" not in headers
+            return FakeNotFound()
+        # Second call: should have token auth
+        captured_auth["header"] = headers.get("Authorization", "")
+        return FakeOk()
+
+    monkeypatch.setattr("pipeline.requests.get", fake_get)
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_faketoken123")
+
+    dest = str(tmp_path / "repo.tar.gz")
+    download_tarball("owner", "private-repo", dest)
+
+    assert call_count == 2
+    assert captured_auth["header"] == "token ghp_faketoken123"
+    assert not captured_auth["header"].startswith("Bearer")
+
+
+def test_download_tarball_missing_repo_raises(monkeypatch, tmp_path):
+    """When both unauthenticated and authenticated requests return 404,
+    download_tarball must raise IngestError with code fetch_failed.
+    """
+
+    class FakeNotFound:
+        status_code = 404
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("pipeline.requests.get", lambda url, **kw: FakeNotFound())
+    monkeypatch.setenv("GITHUB_TOKEN", "ghp_faketoken123")
+
+    dest = str(tmp_path / "repo.tar.gz")
+    with pytest.raises(IngestError) as exc_info:
+        download_tarball("owner", "does-not-exist", dest)
+    assert exc_info.value.code == "fetch_failed"
+    assert "not found" in exc_info.value.message.lower()
+
+
 def test_extract_pdf_chunks_valid():
     import pypdf
 

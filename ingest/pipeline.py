@@ -145,20 +145,42 @@ def parse_and_validate_github_url(raw_url: str) -> tuple[str, str, str]:
 
 
 def download_tarball(owner: str, repo: str, destination_path: str) -> None:
-    """Download repository archive tarball from GitHub."""
+    """Download repository archive tarball from GitHub.
+
+    GitHub's codeload service rejects ``Authorization: Bearer`` tokens for
+    public repos (returns 404).  We therefore try an unauthenticated request
+    first.  If the repo turns out to be private (404) and a GITHUB_TOKEN is
+    available, we retry using the ``token`` auth scheme that codeload accepts.
+    """
     tarball_url = f"https://codeload.github.com/{owner}/{repo}/tar.gz/HEAD"
-    headers = {"User-Agent": "RepoMind"}
-
+    base_headers = {"User-Agent": "RepoMind"}
     github_token = os.getenv("GITHUB_TOKEN")
-    if github_token:
-        headers["Authorization"] = f"Bearer {github_token}"
 
+    # -- first attempt: no auth (works for every public repo) ----------------
     try:
-        response = requests.get(tarball_url, headers=headers, stream=True, timeout=60)
+        response = requests.get(
+            tarball_url, headers=base_headers, stream=True, timeout=60,
+        )
     except requests.RequestException as err:
         raise IngestError(
             "fetch_failed", f"Failed to connect to GitHub: {err}"
         ) from err
+
+    # -- if 404 and we have a token, retry for private repos -----------------
+    if response.status_code == 404 and github_token:
+        response.close()
+        auth_headers = {
+            **base_headers,
+            "Authorization": f"token {github_token}",
+        }
+        try:
+            response = requests.get(
+                tarball_url, headers=auth_headers, stream=True, timeout=60,
+            )
+        except requests.RequestException as err:
+            raise IngestError(
+                "fetch_failed", f"Failed to connect to GitHub: {err}"
+            ) from err
 
     if response.status_code == 404:
         raise IngestError("fetch_failed", "Repository not found or private on GitHub.")

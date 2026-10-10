@@ -32,6 +32,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Question Character Length Limit (1,500 chars in production)
+    if (process.env.NODE_ENV === "production" && trimmedMessage.length > 1500) {
+      return NextResponse.json(
+        {
+          error: `Question exceeds maximum allowed length of 1,500 characters (your question is ${trimmedMessage.length} characters).`,
+        },
+        { status: 400 },
+      );
+    }
+
     // IP Rate Limiting (20 asks per IP per hour on production)
     const clientIp =
       request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||

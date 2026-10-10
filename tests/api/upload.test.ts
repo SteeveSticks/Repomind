@@ -23,19 +23,31 @@ describe("POST /api/upload", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (process.env as Record<string, string | undefined>).NODE_ENV = "test";
-    delete process.env.INGEST_SECRET;
   });
 
-  it("covers: AC-7 rejects unauthorized request when secret is set and header is missing", async () => {
-    process.env.INGEST_SECRET = "super-secret";
+  it("covers: enforces production rate limiting when count exceeds 3 per 24 hours", async () => {
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
+    (db.insert as ReturnType<typeof vi.fn>).mockReturnValue({
+      values: vi.fn().mockReturnValue({
+        onConflictDoUpdate: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([{ count: 4 }]),
+        }),
+      }),
+    });
+
+    const formData = new FormData();
+    const file = new File(["# Hello World\nContent"], "doc.md", { type: "text/markdown" });
+    formData.append("file", file);
+
     const req = new NextRequest("http://localhost:3000/api/upload", {
       method: "POST",
+      body: formData,
     });
 
     const res = await POST(req);
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(429);
     const body = await res.json();
-    expect(body.error).toContain("Unauthorized");
+    expect(body.error).toContain("Indexing limit reached");
   });
 
   it("covers: AC-8 rejects unsupported file extensions with 422 bad_file_type", async () => {

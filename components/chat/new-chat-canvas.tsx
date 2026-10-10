@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type DragEvent, type FormEvent } from "react";
+import { useEffect, useRef, useState, type DragEvent, type FormEvent } from "react";
 import {
   AlertCircleIcon,
   ArrowRightIcon,
@@ -8,7 +8,6 @@ import {
   FileCodeIcon,
   FileTextIcon,
   FileUpIcon,
-  KeyIcon,
   Loader2Icon,
   UploadCloudIcon,
   XIcon,
@@ -54,6 +53,8 @@ type NewChatCanvasProps = {
   onStartUploadIngest: (file: File, secret?: string) => Promise<void>;
   ingestState: IngestStatusState;
   onResetIngest: () => void;
+  initialTab?: "repo" | "upload";
+  initialFile?: File | null;
 };
 
 const sampleRepos = [
@@ -70,13 +71,26 @@ export function NewChatCanvas({
   onStartUploadIngest,
   ingestState,
   onResetIngest,
+  initialTab = "repo",
+  initialFile = null,
 }: NewChatCanvasProps) {
-  const [activeTab, setActiveTab] = useState<"repo" | "upload">("repo");
+  const [activeTab, setActiveTab] = useState<"repo" | "upload">(initialTab);
   const [repoUrl, setRepoUrl] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(initialFile);
   const [isDragging, setIsDragging] = useState(false);
-  const [secret, setSecret] = useState("");
-  const [showSecretInput, setShowSecretInput] = useState(false);
+
+  useEffect(() => {
+    if (initialTab) {
+      setActiveTab(initialTab);
+    }
+  }, [initialTab]);
+
+  useEffect(() => {
+    if (initialFile) {
+      setSelectedFile(initialFile);
+      setActiveTab("upload");
+    }
+  }, [initialFile]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -87,13 +101,13 @@ export function NewChatCanvas({
   async function handleRepoSubmit(event: FormEvent) {
     event.preventDefault();
     if (!repoUrl.trim()) return;
-    await onStartIngest(repoUrl.trim(), secret.trim() || undefined);
+    await onStartIngest(repoUrl.trim());
   }
 
   async function handleUploadSubmit(event: FormEvent) {
     event.preventDefault();
     if (!selectedFile) return;
-    await onStartUploadIngest(selectedFile, secret.trim() || undefined);
+    await onStartUploadIngest(selectedFile);
   }
 
   function handleFileSelect(file: File | undefined) {
@@ -283,35 +297,7 @@ export function NewChatCanvas({
                     </button>
                   ))}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setShowSecretInput((prev) => !prev)}
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <KeyIcon className="h-3 w-3" aria-hidden />
-                  <span>{showSecretInput ? "Hide Secret" : "Add Ingest Secret"}</span>
-                </button>
               </div>
-
-              {showSecretInput ? (
-                <div className="pt-2">
-                  <label
-                    htmlFor="ingest-secret-input"
-                    className="block text-xs font-medium text-muted-foreground mb-1"
-                  >
-                    Ingest Secret (x-ingest-secret header for production deployments)
-                  </label>
-                  <input
-                    type="password"
-                    id="ingest-secret-input"
-                    value={secret}
-                    onChange={(e) => setSecret(e.target.value)}
-                    placeholder="Enter INGEST_SECRET passphrase"
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                </div>
-              ) : null}
             </form>
           ) : (
             <form onSubmit={handleUploadSubmit} className="flex flex-col gap-3">
@@ -384,16 +370,7 @@ export function NewChatCanvas({
                 )}
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowSecretInput((prev) => !prev)}
-                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  <KeyIcon className="h-3 w-3" aria-hidden />
-                  <span>{showSecretInput ? "Hide Secret" : "Add Ingest Secret"}</span>
-                </button>
-
+              <div className="flex items-center justify-end gap-2 pt-1">
                 <Button
                   type="submit"
                   disabled={!selectedFile || isWorking}
@@ -403,25 +380,6 @@ export function NewChatCanvas({
                   <ArrowRightIcon className="h-4 w-4" aria-hidden />
                 </Button>
               </div>
-
-              {showSecretInput ? (
-                <div className="pt-2">
-                  <label
-                    htmlFor="upload-secret-input"
-                    className="block text-xs font-medium text-muted-foreground mb-1"
-                  >
-                    Ingest Secret (x-ingest-secret header for production deployments)
-                  </label>
-                  <input
-                    type="password"
-                    id="upload-secret-input"
-                    value={secret}
-                    onChange={(e) => setSecret(e.target.value)}
-                    placeholder="Enter INGEST_SECRET passphrase"
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-xs ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                </div>
-              ) : null}
             </form>
           )}
         </div>

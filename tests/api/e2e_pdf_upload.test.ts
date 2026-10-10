@@ -58,9 +58,6 @@ startxref
 
     const uploadReq = new NextRequest("http://localhost:3000/api/upload", {
       method: "POST",
-      headers: {
-        "x-ingest-secret": process.env.INGEST_SECRET || "repomindingestsecret",
-      },
       body: formData,
     });
 
