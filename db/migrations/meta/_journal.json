@@ -15,6 +15,13 @@
       "when": 1786748500000,
       "tag": "0001_upload_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791625741912,
+      "tag": "0002_premium_punisher",
+      "breakpoints": true
     }
   ]
 }
