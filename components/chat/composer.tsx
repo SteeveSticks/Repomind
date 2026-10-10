@@ -43,7 +43,8 @@ export function Composer({
   placeholder = composerPlaceholder,
   onOpenUpload,
 }: ComposerProps) {
-  const canSend = value.trim().length > 0 && !disabled;
+  const isOverLimit = value.length > 1500;
+  const canSend = value.trim().length > 0 && !disabled && !isOverLimit;
   const [multiline, setMultiline] = useState(false);
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export function Composer({
           "h-auto min-h-10 bg-muted px-1 py-0 md:min-h-11 md:px-2 md:py-1",
           multiline ? "items-end rounded-lg" : "rounded-full",
           disabled && "opacity-60 cursor-not-allowed",
+          isOverLimit && "border border-destructive ring-1 ring-destructive",
         )}
       >
         <InputGroupAddon align="inline-start" className="pl-1 md:pl-2">
@@ -135,6 +137,17 @@ export function Composer({
           </InputGroupButton>
         </InputGroupAddon>
       </InputGroup>
+      {value.length > 500 ? (
+        <div className="mt-1 flex justify-end px-3 text-[11px] font-mono">
+          <span
+            className={cn(
+              isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground",
+            )}
+          >
+            {value.length} / 1,500 characters
+          </span>
+        </div>
+      ) : null}
     </form>
   );
 }

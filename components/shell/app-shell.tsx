@@ -166,20 +166,15 @@ export function AppShell() {
     composerRef.current?.focus();
   }
 
-  async function startIngest(repoUrl: string, secret?: string) {
+  async function startIngest(repoUrl: string) {
     setIngestState({ jobId: null, status: "submitting", error: null, kind: "github_repo" });
 
     try {
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (secret) {
-        headers["x-ingest-secret"] = secret;
-      }
-
       const res = await fetch("/api/ingest", {
         method: "POST",
-        headers,
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({ repoUrl }),
       });
 
@@ -238,21 +233,15 @@ export function AppShell() {
     }
   }
 
-  async function startUploadIngest(file: File, secret?: string) {
+  async function startUploadIngest(file: File) {
     setIngestState({ jobId: null, status: "submitting", error: null, kind: "upload" });
 
     try {
-      const headers: Record<string, string> = {};
-      if (secret) {
-        headers["x-ingest-secret"] = secret;
-      }
-
       const formData = new FormData();
       formData.append("file", file);
 
       const res = await fetch("/api/upload", {
         method: "POST",
-        headers,
         body: formData,
       });
 

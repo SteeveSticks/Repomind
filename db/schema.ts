@@ -172,3 +172,17 @@ export const askRateLimits = pgTable(
   },
   (table) => [primaryKey({ columns: [table.ip, table.windowStart] })],
 );
+
+export const ingestRateLimits = pgTable(
+  "ingest_rate_limits",
+  {
+    ip: text("ip").notNull(),
+    windowStart: timestamp("window_start", {
+      withTimezone: true,
+      mode: "date",
+    }).notNull(),
+    count: integer("count").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.ip, table.windowStart] })],
+);
+

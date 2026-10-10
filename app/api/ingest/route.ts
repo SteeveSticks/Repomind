@@ -1,35 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { ingestJobs } from "@/db/schema";
+import { ingestJobs, ingestRateLimits } from "@/db/schema";
 import { parseAndValidateGitHubUrl } from "@/lib/github";
 import { triggerIngestTask } from "@/lib/trigger";
 
 export async function POST(request: NextRequest) {
   try {
-    const ingestSecret = process.env.INGEST_SECRET;
-    const headerSecret = request.headers.get("x-ingest-secret");
-
-    // In production the secret is mandatory and the header must match it.
-    // Without the secret the endpoint would be open to anyone.
+    // In production, enforce IP-based rate limiting (max 3 indexings per IP per 24h)
     if (process.env.NODE_ENV === "production") {
-      if (!ingestSecret) {
-        return NextResponse.json(
-          { error: "Server misconfigured: INGEST_SECRET is not set." },
-          { status: 500 },
-        );
-      }
-      if (headerSecret !== ingestSecret) {
-        return NextResponse.json(
-          { error: "Unauthorized: Invalid or missing ingest secret." },
-          { status: 401 },
-        );
-      }
-    } else if (ingestSecret && headerSecret !== ingestSecret) {
-      return NextResponse.json(
-        { error: "Unauthorized: Invalid or missing ingest secret." },
-        { status: 401 },
+      const clientIp =
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        request.headers.get("x-real-ip") ||
+        "127.0.0.1";
+
+      const now = new Date();
+      const windowStart = new Date(
+        Date.UTC(
+          now.getUTCFullYear(),
+          now.getUTCMonth(),
+          now.getUTCDate(),
+          0,
+          0,
+          0,
+          0,
+        ),
       );
+
+      const rateLimitResult = await db
+        .insert(ingestRateLimits)
+        .values({
+          ip: clientIp,
+          windowStart,
+          count: 1,
+        })
+        .onConflictDoUpdate({
+          target: [ingestRateLimits.ip, ingestRateLimits.windowStart],
+          set: { count: sql`${ingestRateLimits.count} + 1` },
+        })
+        .returning({ count: ingestRateLimits.count });
+
+      const currentCount = rateLimitResult[0]?.count ?? 1;
+      if (currentCount > 3) {
+        return NextResponse.json(
+          {
+            error:
+              "Indexing limit reached: You can index up to 3 repositories per 24 hours in production. Please try again later.",
+          },
+          { status: 429 },
+        );
+      }
     }
 
     const body = await request.json().catch(() => null);

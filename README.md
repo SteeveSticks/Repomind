@@ -4,6 +4,11 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 First, run the development server:
 
+- Run trigger.dev
+- Migrate supabase
+- Vovage api key
+- grok 
+
 ```bash
 npm run dev
 # or
